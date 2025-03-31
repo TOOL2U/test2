@@ -1,0 +1,19 @@
+name: Auto Sync Bolt.diy and Visual Studio
+
+on:
+  push:
+    branches:
+      - main  # Change to your branch name if needed
+
+jobs:
+  pull_updates:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Pull latest changes
+        run: |
+          git config --global user.name "github-actions"
+          git config --global user.email "actions@github.com"
+          git pull origin main
