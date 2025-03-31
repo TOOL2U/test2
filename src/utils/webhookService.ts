@@ -388,7 +388,42 @@ export const webhookService = {
       console.error("Test Order Webhook Error:", error instanceof Error ? error.message : String(error));
       throw error;
     }
-  }
+  },
+
+  /**
+   * Send staff notification about a new order
+   * @param order The order data to send
+   * @returns Promise resolving to the response or error
+   */
+  sendStaffNotification: async (order: Order): Promise<any> => {
+    try {
+      const STAFF_WEBHOOK_URL = "https://hook.eu2.make.com/staff-notification";
+
+      const payload = {
+        order_id: order.id,
+        customer_name: order.customerInfo?.name,
+        customer_phone: order.customerInfo?.phone,
+        delivery_address: order.deliveryAddress,
+        total_amount: order.totalAmount,
+        order_status: order.status,
+        order_date: order.orderDate,
+      };
+
+      console.log("Sending staff notification with payload:", payload);
+
+      const response = await axios.post(STAFF_WEBHOOK_URL, payload, {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      console.log("Staff notification sent successfully:", response.data);
+      return response.data;
+    } catch (error) {
+      console.error("Failed to send staff notification:", error);
+      throw error;
+    }
+  },
 };
 
 /**

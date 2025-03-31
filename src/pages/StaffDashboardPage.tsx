@@ -77,16 +77,11 @@ const StaffDashboardPage: React.FC = () => {
   
   // Filter orders based on search term, status filter, and staff role
   const filteredOrders = orders.filter(order => {
-    // Apply status filter
+    // Apply status filter only if it's not set to 'all'
     if (statusFilter !== 'all' && order.status !== statusFilter) {
       return false;
     }
-    
-    // For drivers, only show processing and on-the-way orders
-    if (user?.role === 'driver' && !['processing', 'on-the-way'].includes(order.status)) {
-      return false;
-    }
-    
+
     // Filter by search term (order ID, customer name, or address)
     if (searchTerm) {
       const searchLower = searchTerm.toLowerCase();
@@ -96,8 +91,8 @@ const StaffDashboardPage: React.FC = () => {
         order.deliveryAddress.toLowerCase().includes(searchLower)
       );
     }
-    
-    return true;
+
+    return true; // Include all orders if no filters are applied
   });
   
   // Handle logout
@@ -571,6 +566,20 @@ const StaffDashboardPage: React.FC = () => {
     setShowAdminControls(!showAdminControls);
   };
   
+  // Refresh orders when the component mounts or updates
+  useEffect(() => {
+    const refreshOrders = async () => {
+      try {
+        // Simulate fetching updated orders from the server or context
+        console.log("Refreshing orders for staff dashboard");
+      } catch (error) {
+        console.error("Failed to refresh orders:", error);
+      }
+    };
+
+    refreshOrders();
+  }, [orders]);
+
   // If not authenticated, the useEffect will redirect to login page
   if (!user) {
     return null;
@@ -625,7 +634,6 @@ const StaffDashboardPage: React.FC = () => {
                 <div className="flex items-center">
                   <Filter className="w-4 h-4 mr-1 text-gray-500" />
                   <span className="text-sm text-gray-500 mr-2">Filter:</span>
-                  
                   <select
                     value={statusFilter}
                     onChange={(e) => setStatusFilter(e.target.value)}
@@ -640,6 +648,33 @@ const StaffDashboardPage: React.FC = () => {
                     <option value="completed">Completed</option>
                   </select>
                 </div>
+              </div>
+              <div className="mt-4">
+                {filteredOrders.map(order => (
+                  <div key={order.id} className="p-4 border rounded-lg mb-4">
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <h3 className="font-medium">Order #{order.id}</h3>
+                        <p className="text-sm text-gray-600">{order.customerInfo.name}</p>
+                        <p className="text-sm text-gray-500">{order.deliveryAddress}</p>
+                      </div>
+                      <div>
+                        <select
+                          value={order.status}
+                          onChange={(e) => handleStatusUpdate(order.id, e.target.value)}
+                          className="text-sm border rounded px-2 py-1"
+                        >
+                          <option value="pending">Pending</option>
+                          <option value="payment_verification">Payment Verification</option>
+                          <option value="processing">Processing</option>
+                          <option value="on-the-way">On the Way</option>
+                          <option value="delivered">Delivered</option>
+                          <option value="completed">Completed</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
             

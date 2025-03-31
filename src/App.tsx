@@ -39,7 +39,11 @@ function App() {
           <Route path="/staff-login" element={<StaffLoginPage />} />
           <Route path="/staff-dashboard" element={<StaffDashboardPage />} />
           <Route path="/developers" element={<DevelopersPage />} />
-          <Route path="/tools" element={<CategoriesPage />} />
+          <Route path="/categories" element={
+            <ProtectedRoute>
+              <CategoriesPage />
+            </ProtectedRoute>
+          } />
         </Routes>
       </PageTransition>
       <ChatBot />

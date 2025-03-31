@@ -420,6 +420,16 @@ const HomePage = () => {
             <Logo variant="light" className="mx-auto mb-6" />
             <p className="opacity-75">Professional tools delivered to your doorstep</p>
             <div className="mt-6">
+              <a 
+                href="https://www.facebook.com/profile.php?id=61574673543654" 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="text-[#FFD700] hover:underline"
+              >
+                Follow us on Facebook
+              </a>
+            </div>
+            <div className="mt-6">
               <p className="opacity-75">© 2024 Tool2U. All rights reserved.</p>
             </div>
           </div>

@@ -86,7 +86,7 @@ export default function OrdersPage() {
               You haven't placed any orders yet. Start shopping to see your orders here.
             </p>
             <Link
-              to="/tools"
+              to="/categories"
               className="bg-[#FFD700] text-gray-900 px-6 py-3 rounded-lg font-bold hover:bg-[#FFE44D] transition-colors inline-block"
             >
               Browse Tools

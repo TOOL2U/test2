@@ -1,10 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Filter, Search, ChevronDown, ChevronUp, ShoppingCart } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import Button from '../components/Button';
-import AnimateOnScroll from '../components/AnimateOnScroll';
-import StaggeredList from '../components/StaggeredList';
 import CategoryFilter from '../components/CategoryFilter';
 import ProductGrid from '../components/ProductGrid';
 import { useProducts, Product } from '../utils/productService';
@@ -15,32 +13,29 @@ const CategoriesPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [showFilters, setShowFilters] = useState(false);
   const [sortOption, setSortOption] = useState<'price-asc' | 'price-desc' | 'name-asc' | 'name-desc'>('name-asc');
-  
+
   const { addToCart, totalItems } = useCart();
   const navigate = useNavigate();
 
-  // Get unique categories from products
   const categories = Array.from(
     new Set(
       products.flatMap(product => product.categories)
     )
   ).sort();
 
-  // Filter products based on selected category and search query
   const filteredProducts = products.filter(product => {
     const matchesCategory = selectedCategory ? 
       product.categories.some(cat => cat.toLowerCase() === selectedCategory.toLowerCase()) : 
       true;
-    
+
     const matchesSearch = searchQuery ? 
       product.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
       product.description.toLowerCase().includes(searchQuery.toLowerCase()) : 
       true;
-    
+
     return matchesCategory && matchesSearch;
   });
 
-  // Sort products based on selected sort option
   const sortedProducts = [...filteredProducts].sort((a, b) => {
     switch (sortOption) {
       case 'price-asc':
@@ -75,7 +70,7 @@ const CategoriesPage: React.FC = () => {
       <div className="container mx-auto px-6 py-8">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
           <h1 className="text-3xl font-bold mb-4 md:mb-0">Tool Categories</h1>
-          
+
           <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
             <div className="relative flex-1 sm:max-w-xs">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
@@ -87,7 +82,7 @@ const CategoriesPage: React.FC = () => {
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
-            
+
             <div className="relative">
               <button
                 onClick={() => setShowFilters(!showFilters)}
@@ -97,7 +92,7 @@ const CategoriesPage: React.FC = () => {
                 Sort
                 {showFilters ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
               </button>
-              
+
               {showFilters && (
                 <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg z-10 border border-gray-200">
                   <div className="p-2">
@@ -129,7 +124,7 @@ const CategoriesPage: React.FC = () => {
                 </div>
               )}
             </div>
-            
+
             <Button
               variant="primary"
               className="flex items-center gap-2"
@@ -140,9 +135,7 @@ const CategoriesPage: React.FC = () => {
             </Button>
           </div>
         </div>
-
         <div className="flex flex-col lg:flex-row gap-8">
-          {/* Categories Sidebar */}
           <div className="lg:w-64 flex-shrink-0">
             <CategoryFilter 
               categories={categories}
@@ -150,8 +143,6 @@ const CategoriesPage: React.FC = () => {
               onCategorySelect={handleCategoryClick}
             />
           </div>
-
-          {/* Products Grid */}
           <div className="flex-1">
             {selectedCategory || searchQuery ? (
               <h2 className="text-xl font-bold mb-4">
@@ -160,7 +151,7 @@ const CategoriesPage: React.FC = () => {
             ) : (
               <h2 className="text-xl font-bold mb-4">All Tools ({sortedProducts.length})</h2>
             )}
-            
+
             <ProductGrid 
               products={sortedProducts}
               onAddToCart={handleAddToCart}

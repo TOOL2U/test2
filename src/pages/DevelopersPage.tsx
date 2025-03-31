@@ -4,6 +4,7 @@ import { webhookService } from '../utils/webhookService';
 import Button from '../components/Button';
 import { Link } from 'react-router-dom';
 import { Code, Truck, Map, Navigation } from 'lucide-react';
+import { useOrders } from '../context/OrderContext';
 
 const DevelopersPage: React.FC = () => {
   const { user } = useAuth();
@@ -76,6 +77,37 @@ const DevelopersPage: React.FC = () => {
       setOrderWebhookStatus(`Error sending order webhook: ${error instanceof Error ? error.message : String(error)}`);
     } finally {
       setIsOrderWebhookLoading(false);
+    }
+  };
+
+  const { addOrder } = useOrders();
+
+  const completeTestOrder = async () => {
+    try {
+      const testOrder = {
+        id: `TEST-${Date.now()}`,
+        customerInfo: {
+          name: user?.name || 'Test User',
+          email: user?.email || 'test@example.com',
+          phone: '+66123456789',
+        },
+        items: [
+          { name: 'Cordless Drill', quantity: 1, price: 500 },
+        ],
+        totalAmount: 500,
+        deliveryFee: 50,
+        deliveryAddress: '123 Test Street, Bangkok, Thailand',
+        status: 'pending',
+        orderDate: new Date().toISOString(),
+      };
+
+      await addOrder(testOrder);
+
+      console.log('Test order added to My Orders:', testOrder);
+      alert('Test order completed and added to My Orders successfully!');
+    } catch (error) {
+      console.error('Error completing test order:', error);
+      alert('Failed to complete test order.');
     }
   };
 
@@ -222,6 +254,17 @@ const DevelopersPage: React.FC = () => {
         </div>
       </div>
       
+      <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+        <h2 className="text-xl font-semibold mb-4">Test Order Completion</h2>
+        <p className="mb-4">Click the button below to simulate completing an order, including accepting terms and conditions.</p>
+        <button
+          onClick={completeTestOrder}
+          className="bg-purple-600 hover:bg-purple-700 text-white font-medium py-2 px-4 rounded transition-colors"
+        >
+          Complete Test Order
+        </button>
+      </div>
+
       <div className="bg-white rounded-lg shadow-md p-6">
         <h2 className="text-xl font-semibold mb-4">Development Information</h2>
         <div className="space-y-2">

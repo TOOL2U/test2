@@ -85,27 +85,29 @@ export default function CheckoutPage() {
     // Check if script is already loaded or loading
     const existingScript = document.getElementById('google-maps-script');
     
+    // Ensure the script is not reloaded unnecessarily
+    if (scriptLoadedRef.current) {
+      console.log('Google Maps script already loaded');
+      setMapLoadingState('loaded');
+      return;
+    }
+
+    // Add error handling for existing script
     if (existingScript) {
-      if (scriptLoadedRef.current) {
-        setMapLoadingState('loaded');
-        return;
-      }
-      
-      // If script exists but not marked as loaded, wait for it
       existingScript.addEventListener('load', () => {
         scriptLoadedRef.current = true;
         setMapLoadingState('loaded');
       });
-      
+
       existingScript.addEventListener('error', () => {
         setMapLoadingState('error');
         setLocationError("Failed to load Google Maps. Please try again later.");
       });
-      
+
       return;
     }
-    
-    // If window.google exists, the API is already loaded
+
+    // Ensure window.google is checked before initializing
     if (window.google && window.google.maps) {
       scriptLoadedRef.current = true;
       setMapLoadingState('loaded');

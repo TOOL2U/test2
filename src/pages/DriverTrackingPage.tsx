@@ -398,6 +398,11 @@ export default function DriverTrackingPage() {
   // Get order details
   const order = getOrderById(orderId);
   
+  // Added a placeholder for handleStatusUpdate function
+  const handleStatusUpdate = (orderId: string, newStatus: string) => {
+    console.log(`Order ${orderId} status updated to ${newStatus}`);
+  };
+
   return (
     <div className="pt-20">
       <div className="container mx-auto px-6 py-8">
@@ -454,36 +459,36 @@ export default function DriverTrackingPage() {
                   </>
                 )}
               </div>
+              
+              {/* Tracking status */}
+              {isTracking && lastUpdateTime && (
+                <div className="mt-2 bg-blue-100 p-2 rounded-lg">
+                  <div className="flex items-center text-blue-700 text-sm">
+                    <CheckCircle className="w-4 h-4 mr-1" />
+                    <span>Tracking active - Last update: {lastUpdateTime}</span>
+                  </div>
+                  {currentLocation && (
+                    <p className="text-xs text-blue-600 mt-1">
+                      Current coordinates: {currentLocation.lat.toFixed(6)}, {currentLocation.lng.toFixed(6)}
+                    </p>
+                  )}
+                </div>
+              )}
+              
+              {/* Error message */}
+              {error && (
+                <div className="mt-2 bg-red-50 border-l-4 border-red-400 p-4">
+                  <div className="flex">
+                    <div className="flex-shrink-0">
+                      <AlertTriangle className="h-5 w-5 text-red-400" />
+                    </div>
+                    <div className="ml-3">
+                      <p className="text-sm text-red-700">{error}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
-            
-            {/* Tracking status */}
-            {isTracking && lastUpdateTime && (
-              <div className="mt-2 bg-blue-100 p-2 rounded-lg">
-                <div className="flex items-center text-blue-700 text-sm">
-                  <CheckCircle className="w-4 h-4 mr-1" />
-                  <span>Tracking active - Last update: {lastUpdateTime}</span>
-                </div>
-                {currentLocation && (
-                  <p className="text-xs text-blue-600 mt-1">
-                    Current coordinates: {currentLocation.lat.toFixed(6)}, {currentLocation.lng.toFixed(6)}
-                  </p>
-                )}
-              </div>
-            )}
-            
-            {/* Error message */}
-            {error && (
-              <div className="mt-2 bg-red-50 border-l-4 border-red-400 p-4">
-                <div className="flex">
-                  <div className="flex-shrink-0">
-                    <AlertTriangle className="h-5 w-5 text-red-400" />
-                  </div>
-                  <div className="ml-3">
-                    <p className="text-sm text-red-700">{error}</p>
-                  </div>
-                </div>
-              </div>
-            )}
           </div>
           
           {/* Map */}
@@ -542,6 +547,33 @@ export default function DriverTrackingPage() {
                     ))}
                   </tbody>
                 </table>
+              </div>
+              <div className="mt-4">
+                <h3 className="font-medium mb-2 text-lg">Update Order Status</h3>
+                <select
+                  value={order.status}
+                  onChange={(e) => handleStatusUpdate(order.id, e.target.value)}
+                  className="text-lg border-2 border-gray-300 rounded-lg px-4 py-2 w-full"
+                >
+                  <option value="pending">Pending</option>
+                  <option value="payment_verification">Payment Verification</option>
+                  <option value="processing">Processing</option>
+                  <option value="on-the-way">On the Way</option>
+                  <option value="delivered">Delivered</option>
+                  <option value="completed">Completed</option>
+                </select>
+              </div>
+              <div className="mt-4">
+                <a 
+                  href={order?.gpsCoordinates
+                    ? `https://www.google.com/maps/dir/?api=1&destination=${order.gpsCoordinates.latitude},${order.gpsCoordinates.longitude}`
+                    : '#'}
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="bg-blue-500 text-white px-6 py-3 rounded-lg text-lg font-medium hover:bg-blue-600 transition-colors flex items-center justify-center gap-2"
+                >
+                  Navigate to Customer
+                </a>
               </div>
             </div>
           )}
