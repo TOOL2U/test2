@@ -11,7 +11,8 @@ import {
   Truck,
   RefreshCw,
   Package,
-  Phone
+  Phone,
+  Navigation
 } from 'lucide-react';
 
 export default function DriverTrackingPage() {
@@ -349,6 +350,25 @@ export default function DriverTrackingPage() {
       { enableHighAccuracy: true }
     );
   };
+
+  // Generate Google Maps navigation URL
+  const getNavigationUrl = (order: Order | undefined) => {
+    if (!order || !order.gpsCoordinates) {
+      // If no GPS coordinates, try to use the address
+      if (order && order.deliveryAddress) {
+        return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(order.deliveryAddress)}`;
+      }
+      return '#';
+    }
+    
+    // If we have current location, use directions mode
+    if (currentLocation) {
+      return `https://www.google.com/maps/dir/?api=1&origin=${currentLocation.lat},${currentLocation.lng}&destination=${order.gpsCoordinates.latitude},${order.gpsCoordinates.longitude}&travelmode=driving`;
+    }
+    
+    // Otherwise just navigate to the destination
+    return `https://www.google.com/maps/dir/?api=1&destination=${order.gpsCoordinates.latitude},${order.gpsCoordinates.longitude}&travelmode=driving`;
+  };
   
   // Clean up on unmount
   useEffect(() => {
@@ -565,13 +585,12 @@ export default function DriverTrackingPage() {
               </div>
               <div className="mt-4">
                 <a 
-                  href={order?.gpsCoordinates
-                    ? `https://www.google.com/maps/dir/?api=1&destination=${order.gpsCoordinates.latitude},${order.gpsCoordinates.longitude}`
-                    : '#'}
+                  href={getNavigationUrl(order)}
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="bg-blue-500 text-white px-6 py-3 rounded-lg text-lg font-medium hover:bg-blue-600 transition-colors flex items-center justify-center gap-2"
                 >
+                  <Navigation className="w-5 h-5" />
                   Navigate to Customer
                 </a>
               </div>
@@ -582,17 +601,15 @@ export default function DriverTrackingPage() {
           {order && (
             <div className="p-4 border-t bg-gray-50">
               <div className="flex flex-wrap gap-2">
-                {order.gpsCoordinates && (
-                  <a 
-                    href={`https://www.google.com/maps/dir/?api=1&destination=${order.gpsCoordinates.latitude},${order.gpsCoordinates.longitude}`}
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-600 transition-colors flex items-center gap-1"
-                  >
-                    <MapPin className="w-4 h-4" />
-                    Navigate
-                  </a>
-                )}
+                <a 
+                  href={getNavigationUrl(order)}
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-600 transition-colors flex items-center gap-1"
+                >
+                  <MapPin className="w-4 h-4" />
+                  Navigate
+                </a>
                 
                 <a 
                   href={`tel:${order.customerInfo.phone}`}

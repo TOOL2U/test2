@@ -255,6 +255,22 @@ const DevelopersPage: React.FC = () => {
       </div>
       
       <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+        <h2 className="text-xl font-semibold mb-4">Back Office Access</h2>
+        <p className="mb-4">
+          Access the back office dashboard for owners and management to manage the system.
+        </p>
+        <Link to="/back-office" className="inline-block">
+          <Button 
+            variant="primary" 
+            size="default"
+            className="flex items-center"
+          >
+            Go to Back Office
+          </Button>
+        </Link>
+      </div>
+
+      <div className="bg-white rounded-lg shadow-md p-6 mb-6">
         <h2 className="text-xl font-semibold mb-4">Test Order Completion</h2>
         <p className="mb-4">Click the button below to simulate completing an order, including accepting terms and conditions.</p>
         <button

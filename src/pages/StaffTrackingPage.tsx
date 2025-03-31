@@ -13,7 +13,8 @@ import {
   RefreshCw,
   List,
   Search,
-  User
+  User,
+  Navigation
 } from 'lucide-react';
 
 // Define the staff authentication state
@@ -452,6 +453,26 @@ export default function StaffTrackingPage() {
       { enableHighAccuracy: true }
     );
   };
+
+  // Generate Google Maps navigation URL
+  const getNavigationUrl = (order: Order | undefined) => {
+    if (!order || !order.gpsCoordinates) {
+      // If no GPS coordinates, try to use the address
+      if (order && order.deliveryAddress) {
+        return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(order.deliveryAddress)}`;
+      }
+      return '#';
+    }
+    
+    // If we have current location from tracking session, use directions mode
+    if (order.id && trackingSessions[order.id]?.currentLocation) {
+      const currentLocation = trackingSessions[order.id].currentLocation;
+      return `https://www.google.com/maps/dir/?api=1&origin=${currentLocation.lat},${currentLocation.lng}&destination=${order.gpsCoordinates.latitude},${order.gpsCoordinates.longitude}&travelmode=driving`;
+    }
+    
+    // Otherwise just navigate to the destination
+    return `https://www.google.com/maps/dir/?api=1&destination=${order.gpsCoordinates.latitude},${order.gpsCoordinates.longitude}&travelmode=driving`;
+  };
   
   // If not authenticated, show login screen
   if (!staffAuth.isAuthenticated) {
@@ -760,17 +781,15 @@ export default function StaffTrackingPage() {
                       
                       return (
                         <>
-                          {order.gpsCoordinates && (
-                            <a 
-                              href={`https://www.google.com/maps/dir/?api=1&destination=${order.gpsCoordinates.latitude},${order.gpsCoordinates.longitude}`}
-                              target="_blank" 
-                              rel="noopener noreferrer"
-                              className="bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-600 transition-colors flex items-center gap-1"
-                            >
-                              <MapPin className="w-4 h-4" />
-                              Navigate
-                            </a>
-                          )}
+                          <a 
+                            href={getNavigationUrl(order)}
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-600 transition-colors flex items-center gap-1"
+                          >
+                            <Navigation className="w-4 h-4" />
+                            Navigate to Customer
+                          </a>
                           
                           <a 
                             href={`tel:${order.customerInfo.phone}`}
