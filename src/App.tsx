@@ -16,6 +16,7 @@ import DevelopersPage from './pages/DevelopersPage';
 import CategoriesPage from './pages/CategoriesPage';
 import ChatBot from './components/ChatBot';
 import PageTransition from './components/PageTransition';
+import BackOfficePage from './pages/BackOfficePage';
 
 function App() {
   return (
@@ -44,6 +45,7 @@ function App() {
               <CategoriesPage />
             </ProtectedRoute>
           } />
+          <Route path="/back-office" element={<BackOfficePage />} />
         </Routes>
       </PageTransition>
       <ChatBot />
