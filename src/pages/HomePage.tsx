@@ -385,6 +385,12 @@ const HomePage = () => {
             <div className="mt-6">
               <p className="opacity-75">© 2024 Tool2U. All rights reserved.</p>
             </div>
+            <div className="mt-6 text-sm">
+              <p>Contact Us:</p>
+              <p>Phone: <a href="tel:+66933880630" className="text-[#FFD700] hover:underline">+66 933 880 630</a></p>
+              <p>Email: <a href="mailto:support@tool2u.com" className="text-[#FFD700] hover:underline">support@tool2u.com</a></p>
+              <p>Address: 123 Tool Street, Bangkok, Thailand</p>
+            </div>
           </div>
         </div>
       </footer>
