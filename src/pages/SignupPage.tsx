@@ -4,6 +4,7 @@ import Input from '../components/Input';
 import Button from '../components/Button';
 import { User, Mail, Lock, UserPlus } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import GoogleLoginButton from '../components/GoogleLoginButton';
 
 const SignupPage: React.FC = () => {
   const navigate = useNavigate();
@@ -134,6 +135,14 @@ const SignupPage: React.FC = () => {
     }
   };
 
+  const handleGoogleSignupStart = () => {
+    console.log('Google signup started');
+  };
+
+  const handleGoogleSignupError = (error: Error) => {
+    console.error('Google signup error:', error);
+  };
+
   return (
     <div className="min-h-screen pt-20 pb-12 flex flex-col bg-gray-100">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 flex-grow flex items-center justify-center">
@@ -228,6 +237,23 @@ const SignupPage: React.FC = () => {
               {isLoading ? 'Creating Account...' : 'Create Account'}
             </Button>
           </form>
+
+          <div className="relative flex items-center justify-center mt-6">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-300"></div>
+            </div>
+            <div className="relative px-4 bg-white">
+              <span className="text-sm text-gray-500">Or sign up with</span>
+            </div>
+          </div>
+
+          <div className="mt-6">
+            <GoogleLoginButton
+              onLoginStart={handleGoogleSignupStart}
+              onLoginError={handleGoogleSignupError}
+              className="py-3"
+            />
+          </div>
           
           <div className="mt-8 text-center">
             <p className="text-sm text-gray-600">
