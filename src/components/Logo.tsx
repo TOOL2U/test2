@@ -8,11 +8,10 @@ interface LogoProps {
 
 export function Logo({ variant = 'light', layout = 'horizontal', className = '' }: LogoProps) {
   // Updated logo URL to the specified image
-  const logoUrl = "https://i.imgur.com/w5oKCqX.png";
-  
-  // Increased image size for both layouts
-  const imageSize = layout === 'horizontal' ? 180 : 220;
+  const logoUrl = "https://i.imgur.com/CdRWi12.png";
 
+  // Adjusted image size for both layouts
+  const imageSize = layout === 'horizontal' ? 250 : 300;
   return layout === 'horizontal' ? (
     <div className={`flex items-center gap-2 ${className}`}>
       <img 
