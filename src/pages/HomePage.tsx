@@ -201,35 +201,7 @@ const HomePage = () => {
       </section>
 
       {/* Tool Categories */}
-      <section className="py-20 bg-gray-100" id="tools">
-        <div className="container mx-auto px-6">
-          <AnimateOnScroll>
-            <h2 className="text-4xl font-bold text-center mb-16">Popular Categories</h2>
-          </AnimateOnScroll>
-          <StaggeredList className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <ToolCategory 
-              icon={Drill} 
-              name="Power Tools" 
-              image="https://images.unsplash.com/photo-1572981779307-38b8cabb2407?auto=format&fit=crop&q=80"
-            />
-            <ToolCategory 
-              icon={Wrench} 
-              name="Hand Tools" 
-              image="https://images.unsplash.com/photo-1581147036324-c1c88bb273b4?auto=format&fit=crop&q=80"
-            />
-            <ToolCategory 
-              icon={Hammer} 
-              name="Construction" 
-              image="https://images.unsplash.com/photo-1504917595217-d4dc5ebe6122?auto=format&fit=crop&q=80"
-            />
-            <ToolCategory 
-              icon={Saw} 
-              name="Woodworking" 
-              image="https://images.unsplash.com/photo-1575908539614-ff89490f4a78?auto=format&fit=crop&q=80"
-            />
-          </StaggeredList>
-        </div>
-      </section>
+      {/* Removed the Popular Categories section */}
 
       {/* How It Works */}
       <section className="py-20 bg-white" id="how-it-works">
