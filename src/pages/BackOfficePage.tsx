@@ -391,6 +391,13 @@ const BackOfficePage: React.FC = () => {
     }
   };
 
+  // Add a callback to notify other components of product changes
+  const notifyProductChange = () => {
+    // Trigger a custom event to notify other components
+    const event = new CustomEvent('productsUpdated');
+    window.dispatchEvent(event);
+  };
+
   // Handle form submission
   const handleSubmitProduct = () => {
     if (!validateForm()) {
@@ -435,8 +442,26 @@ const BackOfficePage: React.FC = () => {
     setProductForm(initialProductForm);
     setFormErrors({});
     
+    // Notify other components
+    notifyProductChange();
+
     // Show success message
     alert(`Product "${newProduct.name}" has been added successfully!`);
+  };
+
+  const handleDeleteProduct = (productId: number) => {
+    if (window.confirm('Are you sure you want to delete this product?')) {
+      setProducts(products.filter(product => product.id !== productId));
+      setStats({
+        ...stats,
+        totalProducts: stats.totalProducts - 1
+      });
+
+      // Notify other components
+      notifyProductChange();
+
+      alert('Product deleted successfully!');
+    }
   };
 
   // Reset form
@@ -459,17 +484,6 @@ const BackOfficePage: React.FC = () => {
     if (productToEdit) {
       setProductForm({ ...productToEdit });
       setShowAddProductModal(true);
-    }
-  };
-
-  const handleDeleteProduct = (productId: number) => {
-    if (window.confirm('Are you sure you want to delete this product?')) {
-      setProducts(products.filter(product => product.id !== productId));
-      setStats({
-        ...stats,
-        totalProducts: stats.totalProducts - 1
-      });
-      alert('Product deleted successfully!');
     }
   };
 
