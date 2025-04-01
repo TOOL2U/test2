@@ -5,6 +5,7 @@ import Button from '../components/Button';
 import { User, Lock, LogIn, AlertCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import GoogleLoginButton from '../components/GoogleLoginButton';
+import Modal from '../components/Modal';
 
 const LoginPage: React.FC = () => {
   const navigate = useNavigate();
@@ -26,6 +27,9 @@ const LoginPage: React.FC = () => {
   const [loginError, setLoginError] = useState('');
   const [googleLoginError, setGoogleLoginError] = useState('');
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const [isForgotPasswordOpen, setIsForgotPasswordOpen] = useState(false);
+  const [email, setEmail] = useState('');
+  const [emailError, setEmailError] = useState('');
 
   // Track page view for analytics
   useEffect(() => {
@@ -125,6 +129,22 @@ const LoginPage: React.FC = () => {
     setIsGoogleLoading(false);
   };
 
+  const handleForgotPassword = () => {
+    if (!email.trim()) {
+      setEmailError('Email is required');
+      return;
+    }
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
+      setEmailError('Invalid email address');
+      return;
+    }
+    // Simulate password reset logic
+    alert(`Password reset link sent to ${email}`);
+    setIsForgotPasswordOpen(false);
+    setEmail('');
+    setEmailError('');
+  };
+
   // When Google login is successful, the redirect happens in the AuthContext
 
   return (
@@ -193,18 +213,20 @@ const LoginPage: React.FC = () => {
             </div>
             
             <div className="text-sm">
-              <a href="#" className="font-medium text-[#FFD700] hover:text-[#FFD700]/80">
+              <button
+                onClick={() => setIsForgotPasswordOpen(true)}
+                className="font-medium text-[#FFD700] hover:text-[#FFD700]/80"
+              >
                 Forgot password?
-              </a>
+              </button>
             </div>
           </div>
           
           <Button
             type="submit"
             variant="primary"
-            fullWidth
             disabled={isLoading || authLoading}
-            className="py-3"
+            className="py-3 w-full"
           >
             {isLoading ? 'Signing in...' : 'Sign In'}
           </Button>
@@ -249,6 +271,42 @@ const LoginPage: React.FC = () => {
           </p>
         </div>
       </div>
+
+      {isForgotPasswordOpen && (
+        <Modal onClose={() => setIsForgotPasswordOpen(false)}>
+          <h2 className="text-lg font-bold mb-4">Reset Password</h2>
+          <div className="mb-4">
+            <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+              Email Address
+            </label>
+            <input
+              id="email"
+              type="email"
+              value={email}
+              onChange={(e) => {
+                setEmail(e.target.value);
+                setEmailError('');
+              }}
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-[#FFD700] focus:border-[#FFD700] sm:text-sm"
+            />
+            {emailError && <p className="text-red-500 text-sm mt-1">{emailError}</p>}
+          </div>
+          <div className="flex justify-end space-x-2">
+            <button
+              onClick={() => setIsForgotPasswordOpen(false)}
+              className="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400"
+            >
+              Close
+            </button>
+            <button
+              onClick={handleForgotPassword}
+              className="px-4 py-2 bg-[#FFD700] text-white rounded hover:bg-[#FFD700]/80"
+            >
+              Reset Password
+            </button>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 };
