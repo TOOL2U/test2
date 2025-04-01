@@ -404,6 +404,11 @@ const HomePage = () => {
             <div className="mt-6">
               <p className="opacity-75">© 2024 Tool2U. All rights reserved.</p>
             </div>
+            <div className="mt-6">
+              <p className="opacity-75">Contact us at:</p>
+              <p className="opacity-75">Email: support@tool2u.com</p>
+              <p className="opacity-75">Phone: +1 (800) 123-4567</p>
+            </div>
           </div>
         </div>
       </footer>
