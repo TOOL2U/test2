@@ -53,6 +53,7 @@ export default function StaffTrackingPage() {
   const [trackingSessions, setTrackingSessions] = useState<Record<string, TrackingSession>>({});
   const [mapLoaded, setMapLoaded] = useState(false);
   const [mapError, setMapError] = useState<string | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   
   // Refs for tracking and maps
   const watchIdRef = useRef<Record<string, number>>({});
@@ -167,90 +168,113 @@ export default function StaffTrackingPage() {
   // Initialize map when it's loaded and an order is selected
   useEffect(() => {
     if (mapLoaded && window.google && staffAuth.isAuthenticated && selectedOrderId) {
-      try {
-        const mapElement = document.getElementById('staff-map');
-        if (!mapElement) {
-          console.error("Map element not found");
-          setMapError("Map container not found. Please refresh the page.");
-          return;
-        }
-        
-        const selectedOrder = getOrderById(selectedOrderId);
-        if (!selectedOrder) {
-          console.error("Selected order not found");
-          return;
-        }
-        
-        // Default to business location if no locations available
-        const defaultLocation = { lat: 9.751085, lng: 99.975936 }; // Koh Samui
-        
-        // Get customer location if available
-        const customerLocation = selectedOrder.gpsCoordinates 
-          ? { lat: selectedOrder.gpsCoordinates.latitude, lng: selectedOrder.gpsCoordinates.longitude }
-          : null;
-        
-        // Get driver location if available
-        const driverLocation = selectedOrder.driverLocation
-          ? { lat: selectedOrder.driverLocation.latitude, lng: selectedOrder.driverLocation.longitude }
-          : trackingSessions[selectedOrderId]?.currentLocation || null;
-        
-        // Determine center point for map
-        let center = defaultLocation;
-        if (driverLocation) center = driverLocation;
-        else if (customerLocation) center = customerLocation;
-        
-        // Create map
-        const map = new window.google.maps.Map(mapElement, {
-          zoom: 14,
-          center,
-          mapTypeControl: true,
-          fullscreenControl: true,
-          streetViewControl: true,
-          zoomControl: true,
-        });
-        
-        mapRef.current = map;
-        
-        // Add markers
-        if (driverLocation) {
-          const marker = new window.google.maps.Marker({
-            position: driverLocation,
-            map,
-            title: 'Driver Location',
-            icon: {
-              url: 'https://maps.google.com/mapfiles/ms/icons/blue-dot.png',
-              scaledSize: new window.google.maps.Size(40, 40),
-            },
-          });
-          
-          markersRef.current[selectedOrderId] = marker;
-        }
-        
-        if (customerLocation) {
-          new window.google.maps.Marker({
-            position: customerLocation,
-            map,
-            title: 'Delivery Location',
-            icon: {
-              url: 'https://maps.google.com/mapfiles/ms/icons/red-dot.png',
-              scaledSize: new window.google.maps.Size(40, 40),
-            },
-          });
-        }
-        
-        // If we have both locations, fit bounds to include both
-        if (driverLocation && customerLocation) {
-          const bounds = new window.google.maps.LatLngBounds();
-          bounds.extend(driverLocation);
-          bounds.extend(customerLocation);
-          map.fitBounds(bounds);
-        }
-      } catch (error) {
-        console.error("Error initializing Google Maps:", error);
-        setMapError("Error initializing map. Please refresh the page.");
-      }
+      initializeMap();
     }
   }, [mapLoaded, selectedOrderId, staffAuth.isAuthenticated, getOrderById, trackingSessions]);
+  
+  // Initialize or refresh the map
+  const initializeMap = () => {
+    try {
+      const mapElement = document.getElementById('staff-map');
+      if (!mapElement) {
+        console.error("Map element not found");
+        setMapError("Map container not found. Please refresh the page.");
+        return;
+      }
+      
+      const selectedOrder = getOrderById(selectedOrderId);
+      if (!selectedOrder) {
+        console.error("Selected order not found");
+        return;
+      }
+      
+      // Default to business location if no locations available
+      const defaultLocation = { lat: 9.751085, lng: 99.975936 }; // Koh Samui
+      
+      // Get customer location if available
+      const customerLocation = selectedOrder.gpsCoordinates 
+        ? { lat: selectedOrder.gpsCoordinates.latitude, lng: selectedOrder.gpsCoordinates.longitude }
+        : null;
+      
+      // Get driver location if available
+      const driverLocation = selectedOrder.driverLocation
+        ? { lat: selectedOrder.driverLocation.latitude, lng: selectedOrder.driverLocation.longitude }
+        : trackingSessions[selectedOrderId]?.currentLocation || null;
+      
+      // Determine center point for map
+      let center = defaultLocation;
+      if (driverLocation) center = driverLocation;
+      else if (customerLocation) center = customerLocation;
+      
+      // Create map
+      const map = new window.google.maps.Map(mapElement, {
+        zoom: 14,
+        center,
+        mapTypeControl: true,
+        fullscreenControl: true,
+        streetViewControl: true,
+        zoomControl: true,
+      });
+      
+      mapRef.current = map;
+      
+      // Add markers
+      if (driverLocation) {
+        const marker = new window.google.maps.Marker({
+          position: driverLocation,
+          map,
+          title: 'Driver Location',
+          icon: {
+            url: 'https://maps.google.com/mapfiles/ms/icons/blue-dot.png',
+            scaledSize: new window.google.maps.Size(40, 40),
+          },
+        });
+        
+        markersRef.current[selectedOrderId] = marker;
+      }
+      
+      if (customerLocation) {
+        new window.google.maps.Marker({
+          position: customerLocation,
+          map,
+          title: 'Delivery Location',
+          icon: {
+            url: 'https://maps.google.com/mapfiles/ms/icons/red-dot.png',
+            scaledSize: new window.google.maps.Size(40, 40),
+          },
+        });
+      }
+      
+      // If we have both locations, fit bounds to include both
+      if (driverLocation && customerLocation) {
+        const bounds = new window.google.maps.LatLngBounds();
+        bounds.extend(driverLocation);
+        bounds.extend(customerLocation);
+        map.fitBounds(bounds);
+      }
+    } catch (error) {
+      console.error("Error initializing Google Maps:", error);
+      setMapError("Error initializing map. Please refresh the page.");
+    }
+  };
+  
+  // Refresh map function
+  const refreshMap = () => {
+    setIsRefreshing(true);
+    
+    // Force a location update if tracking
+    if (selectedOrderId && trackingSessions[selectedOrderId]?.isTracking) {
+      forceLocationUpdate(selectedOrderId);
+    }
+    
+    // Re-initialize the map
+    initializeMap();
+    
+    // Set a timeout to reset the refreshing state
+    setTimeout(() => {
+      setIsRefreshing(false);
+    }, 1000);
+  };
   
   // Update marker position when location changes
   useEffect(() => {
@@ -711,6 +735,20 @@ export default function StaffTrackingPage() {
                 
                 {/* Map */}
                 <div className="p-4">
+                  <div className="flex justify-between items-center mb-2">
+                    <h3 className="font-medium">Location Tracking</h3>
+                    
+                    {/* Refresh Map Button */}
+                    <button
+                      onClick={refreshMap}
+                      className="flex items-center gap-1 bg-blue-100 text-blue-700 px-3 py-1 rounded-lg hover:bg-blue-200 transition-colors"
+                      disabled={isRefreshing}
+                    >
+                      <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+                      Refresh Map
+                    </button>
+                  </div>
+                  
                   {mapError ? (
                     <div className="bg-red-50 border-l-4 border-red-400 p-4 mb-4">
                       <div className="flex">
@@ -737,6 +775,7 @@ export default function StaffTrackingPage() {
                           <thead className="bg-gray-50">
                             <tr>
                               <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Item</th>
+                              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
                               <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quantity</th>
                               <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Days</th>
                               <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
@@ -746,6 +785,13 @@ export default function StaffTrackingPage() {
                             {order.items.map((item, index) => (
                               <tr key={index}>
                                 <td className="px-4 py-2 whitespace-nowrap text-sm">{item.name}</td>
+                                <td className="px-4 py-2 whitespace-nowrap text-sm">
+                                  {item.id && (
+                                    <span className="bg-blue-100 text-blue-800 text-xs px-2 py-0.5 rounded-full">
+                                      {item.id}
+                                    </span>
+                                  )}
+                                </td>
                                 <td className="px-4 py-2 whitespace-nowrap text-sm">{item.quantity}</td>
                                 <td className="px-4 py-2 whitespace-nowrap text-sm">{item.days || 1}</td>
                                 <td className="px-4 py-2 whitespace-nowrap text-sm">{item.price} THB</td>
@@ -754,15 +800,15 @@ export default function StaffTrackingPage() {
                           </tbody>
                           <tfoot className="bg-gray-50">
                             <tr>
-                              <td colSpan={3} className="px-4 py-2 text-sm text-right font-medium">Subtotal:</td>
+                              <td colSpan={4} className="px-4 py-2 text-sm text-right font-medium">Subtotal:</td>
                               <td className="px-4 py-2 text-sm">{order.totalAmount} THB</td>
                             </tr>
                             <tr>
-                              <td colSpan={3} className="px-4 py-2 text-sm text-right font-medium">Delivery Fee:</td>
+                              <td colSpan={4} className="px-4 py-2 text-sm text-right font-medium">Delivery Fee:</td>
                               <td className="px-4 py-2 text-sm">{order.deliveryFee} THB</td>
                             </tr>
                             <tr>
-                              <td colSpan={3} className="px-4 py-2 text-sm text-right font-medium">Total:</td>
+                              <td colSpan={4} className="px-4 py-2 text-sm text-right font-medium">Total:</td>
                               <td className="px-4 py-2 text-sm font-bold">{order.totalAmount + order.deliveryFee} THB</td>
                             </tr>
                           </tfoot>

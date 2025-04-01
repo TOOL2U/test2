@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { useOrders } from '../context/OrderContext';
-import { ArrowLeft, Package, Truck, CheckCircle, MapPin, Clock } from 'lucide-react';
+import { ArrowLeft, Package, Truck, CheckCircle, MapPin, Clock, RefreshCw } from 'lucide-react';
 
 // Add type definition for window to include google and initMap
 declare global {
@@ -28,6 +28,7 @@ export default function TrackOrderPage() {
   const [deliveryStatus, setDeliveryStatus] = useState('');
   const [estimatedArrival, setEstimatedArrival] = useState('');
   const [mapError, setMapError] = useState<string | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Load Google Maps API
   useEffect(() => {
@@ -125,68 +126,95 @@ export default function TrackOrderPage() {
     console.log("Map update effect triggered:", { mapLoaded, driverLocation });
     
     if (mapLoaded && driverLocation && window.google) {
-      console.log("Initializing map with driver location:", driverLocation);
+      initializeMap();
+    }
+  }, [mapLoaded, driverLocation, order]);
+
+  // Initialize or refresh the map
+  const initializeMap = () => {
+    console.log("Initializing map with driver location:", driverLocation);
+    
+    try {
+      // Get map container element
+      const mapElement = document.getElementById('map');
+      if (!mapElement) {
+        console.error("Map element not found");
+        setMapError("Map container not found. Please refresh the page.");
+        return;
+      }
       
-      try {
-        // Get map container element
-        const mapElement = document.getElementById('map');
-        if (!mapElement) {
-          console.error("Map element not found");
-          setMapError("Map container not found. Please refresh the page.");
-          return;
-        }
-        
-        // Get customer location from order if available
-        const customerLocation = order?.gpsCoordinates 
-          ? { lat: order.gpsCoordinates.latitude, lng: order.gpsCoordinates.longitude }
-          : null;
-        
-        console.log("Customer location:", customerLocation);
-        
-        // Create map centered on driver
-        const map = new window.google.maps.Map(mapElement, {
-          zoom: 14,
-          center: { lat: driverLocation.lat, lng: driverLocation.lng },
-          mapTypeControl: false,
-          fullscreenControl: false,
-          streetViewControl: false,
-        });
-        
-        // Add driver marker
+      // Get customer location from order if available
+      const customerLocation = order?.gpsCoordinates 
+        ? { lat: order.gpsCoordinates.latitude, lng: order.gpsCoordinates.longitude }
+        : null;
+      
+      console.log("Customer location:", customerLocation);
+      
+      // Create map centered on driver
+      const map = new window.google.maps.Map(mapElement, {
+        zoom: 14,
+        center: { lat: driverLocation.lat, lng: driverLocation.lng },
+        mapTypeControl: false,
+        fullscreenControl: false,
+        streetViewControl: false,
+      });
+      
+      // Add driver marker
+      new window.google.maps.Marker({
+        position: { lat: driverLocation.lat, lng: driverLocation.lng },
+        map,
+        title: 'Driver Location',
+        icon: {
+          url: 'https://maps.google.com/mapfiles/ms/icons/blue-dot.png',
+          scaledSize: new window.google.maps.Size(40, 40),
+        },
+      });
+      
+      // Add customer marker if location is available
+      if (customerLocation) {
         new window.google.maps.Marker({
-          position: { lat: driverLocation.lat, lng: driverLocation.lng },
+          position: customerLocation,
           map,
-          title: 'Driver Location',
+          title: 'Delivery Location',
           icon: {
-            url: 'https://maps.google.com/mapfiles/ms/icons/blue-dot.png',
+            url: 'https://maps.google.com/mapfiles/ms/icons/red-dot.png',
             scaledSize: new window.google.maps.Size(40, 40),
           },
         });
         
-        // Add customer marker if location is available
-        if (customerLocation) {
-          new window.google.maps.Marker({
-            position: customerLocation,
-            map,
-            title: 'Delivery Location',
-            icon: {
-              url: 'https://maps.google.com/mapfiles/ms/icons/red-dot.png',
-              scaledSize: new window.google.maps.Size(40, 40),
-            },
-          });
-          
-          // Fit bounds to include both markers
-          const bounds = new window.google.maps.LatLngBounds();
-          bounds.extend({ lat: driverLocation.lat, lng: driverLocation.lng });
-          bounds.extend(customerLocation);
-          map.fitBounds(bounds);
-        }
-      } catch (error) {
-        console.error("Error initializing Google Maps:", error);
-        setMapError("Error initializing map. Please refresh the page.");
+        // Fit bounds to include both markers
+        const bounds = new window.google.maps.LatLngBounds();
+        bounds.extend({ lat: driverLocation.lat, lng: driverLocation.lng });
+        bounds.extend(customerLocation);
+        map.fitBounds(bounds);
       }
+    } catch (error) {
+      console.error("Error initializing Google Maps:", error);
+      setMapError("Error initializing map. Please refresh the page.");
     }
-  }, [mapLoaded, driverLocation, order]);
+  };
+
+  // Refresh map function
+  const refreshMap = () => {
+    setIsRefreshing(true);
+    
+    // Fetch new driver location
+    const mockLocation = MOCK_DRIVER_LOCATIONS[orderId] || MOCK_DRIVER_LOCATIONS.default;
+    const jitter = 0.005;
+    const location = {
+      lat: mockLocation.lat + (Math.random() * jitter * 2 - jitter),
+      lng: mockLocation.lng + (Math.random() * jitter * 2 - jitter),
+      status: mockLocation.status
+    };
+    
+    setDriverLocation(location);
+    
+    // Re-initialize the map
+    setTimeout(() => {
+      initializeMap();
+      setIsRefreshing(false);
+    }, 500);
+  };
 
   if (!orderId || !order) {
     return (
@@ -285,12 +313,24 @@ export default function TrackOrderPage() {
           <div className="p-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="font-semibold">Live Tracking</h2>
-              {estimatedArrival && (
-                <div className="flex items-center text-sm text-gray-600">
-                  <Clock className="w-4 h-4 mr-1" />
-                  {estimatedArrival}
-                </div>
-              )}
+              <div className="flex items-center gap-4">
+                {estimatedArrival && (
+                  <div className="flex items-center text-sm text-gray-600">
+                    <Clock className="w-4 h-4 mr-1" />
+                    {estimatedArrival}
+                  </div>
+                )}
+                
+                {/* Refresh Map Button */}
+                <button
+                  onClick={refreshMap}
+                  className="flex items-center gap-1 bg-blue-100 text-blue-700 px-3 py-1 rounded-lg hover:bg-blue-200 transition-colors"
+                  disabled={isRefreshing}
+                >
+                  <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+                  Refresh Map
+                </button>
+              </div>
             </div>
             
             {mapError ? (

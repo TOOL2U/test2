@@ -13,7 +13,8 @@ import {
   MessageSquare,
   Package,
   Home,
-  Clock
+  Clock,
+  RefreshCw
 } from 'lucide-react';
 
 export default function DriverTrackingPage() {
@@ -34,6 +35,7 @@ export default function DriverTrackingPage() {
   const [mapError, setMapError] = useState<string | null>(null);
   const [order, setOrder] = useState<any>(null);
   const [orderAccepted, setOrderAccepted] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   
   // Refs for tracking and maps
   const watchIdRef = useRef<number | null>(null);
@@ -104,91 +106,96 @@ export default function DriverTrackingPage() {
   // Initialize map when it's loaded and order data is available
   useEffect(() => {
     if (mapLoaded && window.google && order) {
-      try {
-        const mapElement = document.getElementById('map');
-        if (!mapElement) {
-          console.error("Map element not found");
-          setMapError("Map container not found. Please refresh the page.");
-          return;
-        }
-        
-        // Default to business location if no locations available
-        const defaultLocation = { lat: 9.751085, lng: 99.975936 }; // Koh Samui
-        
-        // Get customer location if available
-        const customerLocation = order.gpsCoordinates 
-          ? { lat: order.gpsCoordinates.latitude, lng: order.gpsCoordinates.longitude }
-          : null;
-        
-        // Determine center point for map
-        let center = customerLocation || defaultLocation;
-        
-        // Create map
-        const map = new window.google.maps.Map(mapElement, {
-          zoom: 14,
-          center,
-          mapTypeControl: true,
-          fullscreenControl: true,
-          streetViewControl: true,
-          zoomControl: true,
-        });
-        
-        mapRef.current = map;
-        
-        // Add customer marker if location is available
-        if (customerLocation) {
-          customerMarkerRef.current = new window.google.maps.Marker({
-            position: customerLocation,
-            map,
-            title: 'Delivery Location',
-            icon: {
-              url: 'https://maps.google.com/mapfiles/ms/icons/red-dot.png',
-              scaledSize: new window.google.maps.Size(40, 40),
-            },
-          });
-          
-          // Add info window for customer
-          const customerInfo = new window.google.maps.InfoWindow({
-            content: `
-              <div>
-                <h3 style="font-weight: bold; margin-bottom: 5px;">${order.customerInfo.name}</h3>
-                <p style="margin: 2px 0;">${order.deliveryAddress}</p>
-                <p style="margin: 2px 0;">${order.customerInfo.phone}</p>
-              </div>
-            `
-          });
-          
-          customerMarkerRef.current.addListener('click', () => {
-            customerInfo.open(map, customerMarkerRef.current);
-          });
-        }
-        
-        // If we have current location, add driver marker
-        if (currentLocation) {
-          driverMarkerRef.current = new window.google.maps.Marker({
-            position: currentLocation,
-            map,
-            title: 'Your Location',
-            icon: {
-              url: 'https://maps.google.com/mapfiles/ms/icons/blue-dot.png',
-              scaledSize: new window.google.maps.Size(40, 40),
-            },
-          });
-          
-          // If we have both locations, fit bounds to include both
-          if (customerLocation) {
-            const bounds = new window.google.maps.LatLngBounds();
-            bounds.extend(currentLocation);
-            bounds.extend(customerLocation);
-            map.fitBounds(bounds);
-          }
-        }
-      } catch (error) {
-        console.error("Error initializing Google Maps:", error);
-        setMapError("Error initializing map. Please refresh the page.");
-      }
+      initializeMap();
     }
   }, [mapLoaded, order, currentLocation]);
+  
+  // Initialize or refresh the map
+  const initializeMap = () => {
+    try {
+      const mapElement = document.getElementById('map');
+      if (!mapElement) {
+        console.error("Map element not found");
+        setMapError("Map container not found. Please refresh the page.");
+        return;
+      }
+      
+      // Default to business location if no locations available
+      const defaultLocation = { lat: 9.751085, lng: 99.975936 }; // Koh Samui
+      
+      // Get customer location if available
+      const customerLocation = order.gpsCoordinates 
+        ? { lat: order.gpsCoordinates.latitude, lng: order.gpsCoordinates.longitude }
+        : null;
+      
+      // Determine center point for map
+      let center = customerLocation || defaultLocation;
+      
+      // Create map
+      const map = new window.google.maps.Map(mapElement, {
+        zoom: 14,
+        center,
+        mapTypeControl: true,
+        fullscreenControl: true,
+        streetViewControl: true,
+        zoomControl: true,
+      });
+      
+      mapRef.current = map;
+      
+      // Add customer marker if location is available
+      if (customerLocation) {
+        customerMarkerRef.current = new window.google.maps.Marker({
+          position: customerLocation,
+          map,
+          title: 'Delivery Location',
+          icon: {
+            url: 'https://maps.google.com/mapfiles/ms/icons/red-dot.png',
+            scaledSize: new window.google.maps.Size(40, 40),
+          },
+        });
+        
+        // Add info window for customer
+        const customerInfo = new window.google.maps.InfoWindow({
+          content: `
+            <div>
+              <h3 style="font-weight: bold; margin-bottom: 5px;">${order.customerInfo.name}</h3>
+              <p style="margin: 2px 0;">${order.deliveryAddress}</p>
+              <p style="margin: 2px 0;">${order.customerInfo.phone}</p>
+            </div>
+          `
+        });
+        
+        customerMarkerRef.current.addListener('click', () => {
+          customerInfo.open(map, customerMarkerRef.current);
+        });
+      }
+      
+      // If we have current location, add driver marker
+      if (currentLocation) {
+        driverMarkerRef.current = new window.google.maps.Marker({
+          position: currentLocation,
+          map,
+          title: 'Your Location',
+          icon: {
+            url: 'https://maps.google.com/mapfiles/ms/icons/blue-dot.png',
+            scaledSize: new window.google.maps.Size(40, 40),
+          },
+        });
+        
+        // If we have both locations, fit bounds to include both
+        if (customerLocation) {
+          const bounds = new window.google.maps.LatLngBounds();
+          bounds.extend(currentLocation);
+          bounds.extend(customerLocation);
+          map.fitBounds(bounds);
+        }
+      }
+    } catch (error) {
+      console.error("Error initializing Google Maps:", error);
+      setMapError("Error initializing map. Please refresh the page.");
+    }
+  };
   
   // Update marker position when location changes
   useEffect(() => {
@@ -343,6 +350,24 @@ export default function DriverTrackingPage() {
     );
   };
   
+  // Refresh map function
+  const refreshMap = () => {
+    setIsRefreshing(true);
+    
+    // Force a location update if tracking
+    if (isTracking) {
+      forceLocationUpdate();
+    }
+    
+    // Re-initialize the map
+    initializeMap();
+    
+    // Set a timeout to reset the refreshing state
+    setTimeout(() => {
+      setIsRefreshing(false);
+    }, 1000);
+  };
+  
   // Accept order function
   const acceptOrder = () => {
     if (orderId) {
@@ -457,7 +482,7 @@ export default function DriverTrackingPage() {
           <div className="p-6">
             {/* Product ID Display */}
             <div className="bg-gray-100 p-4 rounded-lg mb-6 text-center">
-              <h3 className="text-sm text-gray-500 mb-1">Product ID</h3>
+              <h3 className="text-sm text-gray-500 mb-1">Order ID</h3>
               <div className="text-3xl font-bold text-gray-900">{order.id}</div>
             </div>
             
@@ -507,7 +532,14 @@ export default function DriverTrackingPage() {
                   {order.items.map((item: any, index: number) => (
                     <div key={index} className="mb-2 pb-2 border-b border-gray-200 last:border-0 last:mb-0 last:pb-0">
                       <div className="flex justify-between">
-                        <span className="font-medium">{item.name}</span>
+                        <div className="flex items-center">
+                          <span className="font-medium">{item.name}</span>
+                          {item.id && (
+                            <span className="ml-2 bg-blue-100 text-blue-800 text-xs px-2 py-0.5 rounded-full">
+                              ID: {item.id}
+                            </span>
+                          )}
+                        </div>
                         <span>x{item.quantity}</span>
                       </div>
                       <div className="flex justify-between text-sm text-gray-600">
@@ -542,7 +574,19 @@ export default function DriverTrackingPage() {
           {/* Map */}
           <div className="lg:col-span-2 bg-white rounded-lg shadow-md overflow-hidden">
             <div className="p-4 border-b">
-              <h2 className="text-xl font-bold">Delivery Map</h2>
+              <div className="flex justify-between items-center">
+                <h2 className="text-xl font-bold">Delivery Map</h2>
+                
+                {/* Refresh Map Button */}
+                <button
+                  onClick={refreshMap}
+                  className="flex items-center gap-1 bg-blue-100 text-blue-700 px-3 py-1 rounded-lg hover:bg-blue-200 transition-colors"
+                  disabled={isRefreshing}
+                >
+                  <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+                  Refresh Map
+                </button>
+              </div>
               
               {/* Tracking status */}
               {isTracking && lastUpdateTime && (
@@ -693,6 +737,45 @@ export default function DriverTrackingPage() {
                       <span className="font-medium">{order.distance.toFixed(1)} km</span>
                     </div>
                   )}
+                </div>
+              </div>
+            </div>
+            
+            {/* Product Details Section */}
+            <div className="bg-white rounded-lg shadow-md overflow-hidden mt-6">
+              <div className="p-4 border-b bg-blue-50">
+                <h2 className="font-bold flex items-center">
+                  <Package className="w-5 h-5 mr-2 text-blue-600" />
+                  Product Details
+                </h2>
+              </div>
+              
+              <div className="p-4">
+                <div className="space-y-4">
+                  {order.items.map((item: any, index: number) => (
+                    <div key={index} className="border border-gray-200 rounded-lg p-3 bg-gray-50">
+                      <div className="flex justify-between items-center mb-2">
+                        <span className="font-bold text-lg">{item.name}</span>
+                        <span className="bg-blue-600 text-white px-3 py-1 rounded-lg text-sm">
+                          Qty: {item.quantity}
+                        </span>
+                      </div>
+                      
+                      {/* Product ID Badge - Prominently displayed */}
+                      {item.id && (
+                        <div className="bg-yellow-100 border border-yellow-300 rounded-md p-2 mb-2 flex items-center justify-between">
+                          <span className="font-medium text-gray-800">Product ID:</span>
+                          <span className="font-bold text-blue-800">{item.id}</span>
+                        </div>
+                      )}
+                      
+                      <div className="text-sm text-gray-600 space-y-1">
+                        {item.brand && <p><strong>Brand:</strong> {item.brand}</p>}
+                        <p><strong>Price:</strong> {item.price} THB</p>
+                        {item.days && <p><strong>Rental Days:</strong> {item.days}</p>}
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>

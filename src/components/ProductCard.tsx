@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { ShoppingCart, Check, ImageOff } from 'lucide-react';
+import { ShoppingCart, Check, ImageOff, Tag } from 'lucide-react';
 import Button from './Button';
 
 interface ProductCardProps {
   id: number;
+  productId: string; // Added product ID
   name: string;
   categories: string[];
   description: string;
@@ -15,6 +16,7 @@ interface ProductCardProps {
 
 const ProductCard: React.FC<ProductCardProps> = ({
   id,
+  productId,
   name,
   categories,
   description,
@@ -49,6 +51,12 @@ const ProductCard: React.FC<ProductCardProps> = ({
   return (
     <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300">
       <div className="relative h-48 overflow-hidden bg-gray-100">
+        {/* Product ID Badge */}
+        <div className="absolute top-2 left-2 z-10 bg-blue-600 text-white text-xs font-bold px-2 py-1 rounded-md flex items-center">
+          <Tag className="w-3 h-3 mr-1" />
+          {productId}
+        </div>
+        
         {/* Loading skeleton */}
         {!imageLoaded && (
           <div className="absolute inset-0 flex items-center justify-center bg-gray-100">

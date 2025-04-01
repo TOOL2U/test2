@@ -68,8 +68,8 @@ const sampleOrders: Order[] = [
       phone: '+66123456789'
     },
     items: [
-      { id: 'ITEM-1', name: 'Power Drill', brand: 'DeWalt', price: 500, quantity: 1 },
-      { id: 'ITEM-2', name: 'Circular Saw', brand: 'Makita', price: 700, quantity: 1 }
+      { id: 'PROD-001', name: 'Power Drill', brand: 'DeWalt', price: 500, quantity: 1 },
+      { id: 'PROD-002', name: 'Circular Saw', brand: 'Makita', price: 700, quantity: 1 }
     ],
     totalAmount: 1200,
     deliveryAddress: '123 Main St, Bangkok, Thailand',
@@ -88,7 +88,7 @@ const sampleOrders: Order[] = [
       phone: '+66987654321'
     },
     items: [
-      { id: 'ITEM-3', name: 'Ladder', brand: 'Werner', price: 1200, quantity: 1 }
+      { id: 'PROD-003', name: 'Ladder', brand: 'Werner', price: 1200, quantity: 1 }
     ],
     totalAmount: 1200,
     deliveryAddress: '456 Park Ave, Chiang Mai, Thailand',
@@ -107,8 +107,8 @@ const sampleOrders: Order[] = [
       phone: '+66234567890'
     },
     items: [
-      { id: 'ITEM-4', name: 'Chainsaw', brand: 'Stihl', price: 1500, quantity: 1 },
-      { id: 'ITEM-5', name: 'Safety Helmet', brand: 'MSA', price: 300, quantity: 1 }
+      { id: 'PROD-004', name: 'Chainsaw', brand: 'Stihl', price: 1500, quantity: 1 },
+      { id: 'PROD-005', name: 'Safety Helmet', brand: 'MSA', price: 300, quantity: 1 }
     ],
     totalAmount: 1800,
     deliveryAddress: '789 River Rd, Phuket, Thailand',

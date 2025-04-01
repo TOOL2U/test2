@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 
 export interface Product {
   id: number;
+  productId: string; // Added product ID field
   name: string;
   categories: string[];
   description: string;
@@ -18,6 +19,7 @@ const getRealProducts = (): Product[] => {
   return [
     {
       id: 1,
+      productId: "TOOL-AC001",
       name: "Auto air compressor",
       categories: ["Air Tools"],
       description: "High-quality auto air compressor for various applications",
@@ -37,6 +39,7 @@ const getRealProducts = (): Product[] => {
     },
     {
       id: 2,
+      productId: "TOOL-GT001",
       name: "Gasoline grass trimmer and brush cutter",
       categories: ["Garden Tools"],
       description: "Powerful gasoline grass trimmer and brush cutter for garden maintenance",
@@ -55,6 +58,7 @@ const getRealProducts = (): Product[] => {
     },
     {
       id: 3,
+      productId: "TOOL-CD001",
       name: "Cordless impact drill",
       categories: ["P20S"],
       description: "Versatile cordless impact drill for various drilling tasks",
@@ -78,6 +82,7 @@ const getRealProducts = (): Product[] => {
     },
     {
       id: 4,
+      productId: "TOOL-MT001",
       name: "Steel measuring tape",
       categories: ["Measuring Tools"],
       description: "Durable steel measuring tape for precise measurements",
@@ -92,6 +97,7 @@ const getRealProducts = (): Product[] => {
     },
     {
       id: 5,
+      productId: "TOOL-WM001",
       name: "Inverter MMA welding machine",
       categories: ["Welding Machines"],
       description: "Professional inverter MMA welding machine for welding tasks",
@@ -105,6 +111,7 @@ const getRealProducts = (): Product[] => {
     },
     {
       id: 6,
+      productId: "TOOL-SP001",
       name: "Knitted&PVC dots gloves",
       categories: ["Safety Products"],
       description: "Comfortable and protective knitted & PVC dots gloves for safety",
@@ -117,6 +124,7 @@ const getRealProducts = (): Product[] => {
     },
     {
       id: 7,
+      productId: "TOOL-PA001",
       name: "Diamond disc",
       categories: ["Power Tools Accessories"],
       description: "High-quality diamond disc for cutting applications",
@@ -131,6 +139,7 @@ const getRealProducts = (): Product[] => {
     },
     {
       id: 8,
+      productId: "TOOL-GE001",
       name: "Gasoline engine",
       categories: ["Generators"],
       description: "Reliable gasoline engine for power generation",
@@ -146,6 +155,7 @@ const getRealProducts = (): Product[] => {
     },
     {
       id: 9,
+      productId: "TOOL-BT001",
       name: "Cut off saw",
       categories: ["Bench Tools"],
       description: "Powerful cut off saw for precise cutting",
@@ -162,6 +172,7 @@ const getRealProducts = (): Product[] => {
     },
     {
       id: 10,
+      productId: "TOOL-LS001",
       name: "Lithium-Ion work lamp",
       categories: ["Lamp Series And Socket Series"],
       description: "Bright lithium-ion work lamp for illumination",
@@ -178,6 +189,7 @@ const getRealProducts = (): Product[] => {
     },
     {
       id: 11,
+      productId: "TOOL-CE001",
       name: "Gasoline concrete vibrator",
       categories: ["Small Construction Equipment"],
       description: "Efficient gasoline concrete vibrator for construction work",
@@ -193,6 +205,7 @@ const getRealProducts = (): Product[] => {
     },
     {
       id: 12,
+      productId: "TOOL-HT001",
       name: "Stand for demolition breaker",
       categories: ["Hand Tools"],
       description: "Sturdy stand for demolition breaker for stability",
@@ -208,6 +221,7 @@ const getRealProducts = (): Product[] => {
     },
     {
       id: 13,
+      productId: "TOOL-WP001",
       name: "Water pump",
       categories: ["Water Pumps"],
       description: "Efficient water pump for water transfer applications",
@@ -227,6 +241,7 @@ const getRealProducts = (): Product[] => {
     },
     {
       id: 14,
+      productId: "TOOL-PT001",
       name: "Cordless 2 pcs combo kit",
       categories: ["Power Tools"],
       description: "Versatile cordless 2-piece combo kit for various tasks",
