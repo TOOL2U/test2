@@ -258,16 +258,22 @@ const DevelopersPage: React.FC = () => {
         <h2 className="text-xl font-semibold mb-4">Back Office Access</h2>
         <p className="mb-4">
           Access the back office dashboard for owners and management to manage the system.
+          This secure area provides comprehensive tools for inventory, sales, orders, customers, and settings management.
         </p>
-        <Link to="/back-office" className="inline-block">
-          <Button 
-            variant="primary" 
-            size="default"
-            className="flex items-center"
-          >
-            Go to Back Office
-          </Button>
-        </Link>
+        <div className="flex flex-wrap gap-3">
+          <Link to="/back-office" className="inline-block">
+            <Button 
+              variant="primary" 
+              size="default"
+              className="flex items-center"
+            >
+              Go to Back Office
+            </Button>
+          </Link>
+          <p className="w-full mt-2 text-sm text-gray-500">
+            Note: Only authorized personnel with admin or owner roles can access the back office.
+          </p>
+        </div>
       </div>
 
       <div className="bg-white rounded-lg shadow-md p-6 mb-6">

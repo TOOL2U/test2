@@ -11,6 +11,7 @@ import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
 import StaffLoginPage from './pages/StaffLoginPage';
 import StaffDashboardPage from './pages/StaffDashboardPage';
+import BackOfficePage from './pages/BackOfficePage';
 import ProtectedRoute from './components/ProtectedRoute';
 import DevelopersPage from './pages/DevelopersPage';
 import CategoriesPage from './pages/CategoriesPage';
@@ -38,6 +39,7 @@ function App() {
           <Route path="/signup" element={<SignupPage />} />
           <Route path="/staff-login" element={<StaffLoginPage />} />
           <Route path="/staff-dashboard" element={<StaffDashboardPage />} />
+          <Route path="/back-office" element={<BackOfficePage />} />
           <Route path="/developers" element={<DevelopersPage />} />
           <Route path="/categories" element={
             <ProtectedRoute>

@@ -201,7 +201,35 @@ const HomePage = () => {
       </section>
 
       {/* Tool Categories */}
-      {/* Removed the Popular Categories section */}
+      <section className="py-20 bg-gray-100" id="tools">
+        <div className="container mx-auto px-6">
+          <AnimateOnScroll>
+            <h2 className="text-4xl font-bold text-center mb-16">Popular Categories</h2>
+          </AnimateOnScroll>
+          <StaggeredList className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <ToolCategory 
+              icon={Drill} 
+              name="Power Tools" 
+              image="https://images.unsplash.com/photo-1572981779307-38b8cabb2407?auto=format&fit=crop&q=80"
+            />
+            <ToolCategory 
+              icon={Wrench} 
+              name="Hand Tools" 
+              image="https://images.unsplash.com/photo-1581147036324-c1c88bb273b4?auto=format&fit=crop&q=80"
+            />
+            <ToolCategory 
+              icon={Hammer} 
+              name="Construction" 
+              image="https://images.unsplash.com/photo-1504917595217-d4dc5ebe6122?auto=format&fit=crop&q=80"
+            />
+            <ToolCategory 
+              icon={Saw} 
+              name="Woodworking" 
+              image="https://images.unsplash.com/photo-1575908539614-ff89490f4a78?auto=format&fit=crop&q=80"
+            />
+          </StaggeredList>
+        </div>
+      </section>
 
       {/* How It Works */}
       <section className="py-20 bg-white" id="how-it-works">
@@ -403,11 +431,6 @@ const HomePage = () => {
             </div>
             <div className="mt-6">
               <p className="opacity-75">© 2024 Tool2U. All rights reserved.</p>
-            </div>
-            <div className="mt-6">
-              <p className="opacity-75">Contact us at:</p>
-              <p className="opacity-75">Email: support@tool2u.com</p>
-              <p className="opacity-75">Phone: +1 (800) 123-4567</p>
             </div>
           </div>
         </div>
