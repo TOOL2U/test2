@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Filter, Search, ChevronDown, ChevronUp, ShoppingCart } from 'lucide-react';
 import { useCart } from '../context/CartContext';
@@ -64,20 +64,6 @@ const CategoriesPage: React.FC = () => {
   const handleCategoryClick = (category: string) => {
     setSelectedCategory(category === selectedCategory ? null : category);
   };
-
-  // Add an event listener to refresh products when notified
-  useEffect(() => {
-    const handleProductsUpdated = () => {
-      // Trigger a re-fetch of products
-      window.location.reload(); // Simplified for now; ideally, re-fetch data without reloading
-    };
-
-    window.addEventListener('productsUpdated', handleProductsUpdated);
-
-    return () => {
-      window.removeEventListener('productsUpdated', handleProductsUpdated);
-    };
-  }, []);
 
   return (
     <div className="pt-20 min-h-screen bg-gray-50">
