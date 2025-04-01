@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Truck, Wrench, CheckCircle, Hammer, Drill, Save as Saw, ArrowRight, Phone, Star, Clock, DollarSign, ChevronDown, ChevronUp, Calendar, MapPin, Shield } from 'lucide-react';
+import { Wrench, CheckCircle, ArrowRight, Phone, Star, Clock, DollarSign, ChevronDown, ChevronUp, Calendar, MapPin, Shield } from 'lucide-react';
 import { Logo } from '../components/Logo';
 import AnimateOnScroll from '../components/AnimateOnScroll';
 import StaggeredList from '../components/StaggeredList';
@@ -97,9 +97,6 @@ function TestimonialCard({ name, role, quote, image }: { name: string; role: str
 import { CSSTransition } from 'react-transition-group';
 
 const HomePage = () => {
-  // Track scroll position for animations
-  const [scrollY, setScrollY] = useState(0);
-
   useEffect(() => {
     const handleScroll = () => {
       setScrollY(window.scrollY);

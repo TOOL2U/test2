@@ -202,9 +202,8 @@ const LoginPage: React.FC = () => {
           <Button
             type="submit"
             variant="primary"
-            fullWidth
+            className="py-3 w-full" // Replaced 'fullWidth' with 'w-full' for Tailwind CSS compatibility
             disabled={isLoading || authLoading}
-            className="py-3"
           >
             {isLoading ? 'Signing in...' : 'Sign In'}
           </Button>
