@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useSearchParams, Link } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useOrders } from '../context/OrderContext';
-import { createLocationTracker, positionToCoordinates } from '../utils/locationTracker';
 import { 
   ArrowLeft, 
   MapPin, 
@@ -9,63 +8,66 @@ import {
   Square, 
   AlertTriangle, 
   CheckCircle, 
-  Truck,
-  RefreshCw,
-  Package,
-  Phone,
   Navigation,
-  Bell
+  Phone,
+  MessageSquare,
+  Package,
+  Home,
+  Clock
 } from 'lucide-react';
 
 export default function DriverTrackingPage() {
-  const [searchParams] = useSearchParams();
-  const orderId = searchParams.get('order_id');
-  const staffCode = searchParams.get('code');
-  const { getOrderById, updateDriverLocation } = useOrders();
+  const { orders, getOrderById, updateOrderStatus, updateDriverLocation } = useOrders();
+  const navigate = useNavigate();
+  const location = useLocation();
+  
+  // Parse query parameters
+  const queryParams = new URLSearchParams(location.search);
+  const orderId = queryParams.get('order_id');
+  const driverCode = queryParams.get('code');
   
   // State for tracking
   const [isTracking, setIsTracking] = useState(false);
   const [currentLocation, setCurrentLocation] = useState<{lat: number; lng: number} | null>(null);
   const [lastUpdateTime, setLastUpdateTime] = useState<string | null>(null);
   const [mapLoaded, setMapLoaded] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [authenticated, setAuthenticated] = useState(false);
-  const [notificationSent, setNotificationSent] = useState(false);
-  const [distanceToCustomer, setDistanceToCustomer] = useState<number | null>(null);
+  const [mapError, setMapError] = useState<string | null>(null);
+  const [order, setOrder] = useState<any>(null);
+  const [orderAccepted, setOrderAccepted] = useState(false);
   
-  // Refs
+  // Refs for tracking and maps
   const watchIdRef = useRef<number | null>(null);
   const mapRef = useRef<any>(null);
   const driverMarkerRef = useRef<any>(null);
   const customerMarkerRef = useRef<any>(null);
   const updateCountRef = useRef<number>(0);
-  const locationTrackerRef = useRef<any>(null);
   
-  // Check if we have a valid order and staff code
+  // Load order data
   useEffect(() => {
-    if (!orderId) {
-      setError("No order ID provided. Please go back and select an order.");
-      return;
+    if (orderId) {
+      const orderData = getOrderById(orderId);
+      if (orderData) {
+        setOrder(orderData);
+        
+        // Check if order is already accepted (status is "on our way")
+        if (orderData.status === 'on our way') {
+          setOrderAccepted(true);
+        }
+      }
     }
-    
-    if (!staffCode) {
-      setError("No staff code provided. Authentication required.");
-      return;
+  }, [orderId, getOrderById, orders]);
+  
+  // Validate driver code
+  useEffect(() => {
+    if (!driverCode) {
+      setMapError("Driver code is required for tracking");
+    } else if (!['DRIVER123', 'DRIVER456', 'OWNER789', 'ADMIN123'].includes(driverCode)) {
+      setMapError("Invalid driver code");
     }
-    
-    // Simple validation - in production this would be more secure
-    const validCodes = ['DRIVER123', 'DRIVER456', 'OWNER789', 'ADMIN123'];
-    if (validCodes.includes(staffCode)) {
-      setAuthenticated(true);
-    } else {
-      setError("Invalid staff code. Please use a valid code to access this system.");
-    }
-  }, [orderId, staffCode]);
+  }, [driverCode]);
   
   // Load Google Maps API
   useEffect(() => {
-    if (!authenticated || !orderId) return;
-    
     if (!window.google && !document.getElementById('google-maps-script')) {
       const script = document.createElement('script');
       script.id = 'google-maps-script';
@@ -82,7 +84,7 @@ export default function DriverTrackingPage() {
       // Add error handling for the script
       script.onerror = () => {
         console.error("Failed to load Google Maps API");
-        setError("Failed to load Google Maps. Please try again later.");
+        setMapError("Failed to load Google Maps. Please try again later.");
       };
       
       document.head.appendChild(script);
@@ -97,22 +99,16 @@ export default function DriverTrackingPage() {
         delete window.initMap;
       }
     };
-  }, [authenticated, orderId]);
+  }, []);
   
-  // Initialize map when it's loaded
+  // Initialize map when it's loaded and order data is available
   useEffect(() => {
-    if (mapLoaded && window.google && authenticated && orderId) {
+    if (mapLoaded && window.google && order) {
       try {
-        const mapElement = document.getElementById('driver-map');
+        const mapElement = document.getElementById('map');
         if (!mapElement) {
           console.error("Map element not found");
-          setError("Map container not found. Please refresh the page.");
-          return;
-        }
-        
-        const order = getOrderById(orderId);
-        if (!order) {
-          setError("Order not found. Please check the order ID.");
+          setMapError("Map container not found. Please refresh the page.");
           return;
         }
         
@@ -124,15 +120,8 @@ export default function DriverTrackingPage() {
           ? { lat: order.gpsCoordinates.latitude, lng: order.gpsCoordinates.longitude }
           : null;
         
-        // Get driver location if available
-        const driverLocation = order.driverLocation
-          ? { lat: order.driverLocation.latitude, lng: order.driverLocation.longitude }
-          : currentLocation || null;
-        
         // Determine center point for map
-        let center = defaultLocation;
-        if (driverLocation) center = driverLocation;
-        else if (customerLocation) center = customerLocation;
+        let center = customerLocation || defaultLocation;
         
         // Create map
         const map = new window.google.maps.Map(mapElement, {
@@ -146,23 +135,9 @@ export default function DriverTrackingPage() {
         
         mapRef.current = map;
         
-        // Add markers
-        if (driverLocation) {
-          const marker = new window.google.maps.Marker({
-            position: driverLocation,
-            map,
-            title: 'Your Location',
-            icon: {
-              url: 'https://maps.google.com/mapfiles/ms/icons/blue-dot.png',
-              scaledSize: new window.google.maps.Size(40, 40),
-            },
-          });
-          
-          driverMarkerRef.current = marker;
-        }
-        
+        // Add customer marker if location is available
         if (customerLocation) {
-          const marker = new window.google.maps.Marker({
+          customerMarkerRef.current = new window.google.maps.Marker({
             position: customerLocation,
             map,
             title: 'Delivery Location',
@@ -172,22 +147,48 @@ export default function DriverTrackingPage() {
             },
           });
           
-          customerMarkerRef.current = marker;
+          // Add info window for customer
+          const customerInfo = new window.google.maps.InfoWindow({
+            content: `
+              <div>
+                <h3 style="font-weight: bold; margin-bottom: 5px;">${order.customerInfo.name}</h3>
+                <p style="margin: 2px 0;">${order.deliveryAddress}</p>
+                <p style="margin: 2px 0;">${order.customerInfo.phone}</p>
+              </div>
+            `
+          });
+          
+          customerMarkerRef.current.addListener('click', () => {
+            customerInfo.open(map, customerMarkerRef.current);
+          });
         }
         
-        // If we have both locations, fit bounds to include both
-        if (driverLocation && customerLocation) {
-          const bounds = new window.google.maps.LatLngBounds();
-          bounds.extend(driverLocation);
-          bounds.extend(customerLocation);
-          map.fitBounds(bounds);
+        // If we have current location, add driver marker
+        if (currentLocation) {
+          driverMarkerRef.current = new window.google.maps.Marker({
+            position: currentLocation,
+            map,
+            title: 'Your Location',
+            icon: {
+              url: 'https://maps.google.com/mapfiles/ms/icons/blue-dot.png',
+              scaledSize: new window.google.maps.Size(40, 40),
+            },
+          });
+          
+          // If we have both locations, fit bounds to include both
+          if (customerLocation) {
+            const bounds = new window.google.maps.LatLngBounds();
+            bounds.extend(currentLocation);
+            bounds.extend(customerLocation);
+            map.fitBounds(bounds);
+          }
         }
       } catch (error) {
         console.error("Error initializing Google Maps:", error);
-        setError("Error initializing map. Please refresh the page.");
+        setMapError("Error initializing map. Please refresh the page.");
       }
     }
-  }, [mapLoaded, authenticated, orderId, getOrderById, currentLocation]);
+  }, [mapLoaded, order, currentLocation]);
   
   // Update marker position when location changes
   useEffect(() => {
@@ -195,7 +196,7 @@ export default function DriverTrackingPage() {
       if (driverMarkerRef.current) {
         // Update existing marker position
         driverMarkerRef.current.setPosition(currentLocation);
-      } else if (currentLocation) {
+      } else {
         // Create new marker if it doesn't exist
         driverMarkerRef.current = new window.google.maps.Marker({
           position: currentLocation,
@@ -208,15 +209,15 @@ export default function DriverTrackingPage() {
         });
       }
       
-      // Center map on new location
-      mapRef.current.panTo(currentLocation);
-      
-      // If we have both markers, fit bounds to include both
-      if (driverMarkerRef.current && customerMarkerRef.current) {
+      // If we have customer location, fit bounds to include both
+      if (customerMarkerRef.current) {
         const bounds = new window.google.maps.LatLngBounds();
-        bounds.extend(driverMarkerRef.current.getPosition());
+        bounds.extend(currentLocation);
         bounds.extend(customerMarkerRef.current.getPosition());
         mapRef.current.fitBounds(bounds);
+      } else {
+        // Center map on driver location
+        mapRef.current.panTo(currentLocation);
       }
     }
   }, [currentLocation]);
@@ -224,16 +225,37 @@ export default function DriverTrackingPage() {
   // Start tracking function
   const startTracking = () => {
     if (!navigator.geolocation) {
-      setError("Geolocation is not supported by this browser.");
+      setMapError("Geolocation is not supported by this browser.");
       return;
     }
     
     setIsTracking(true);
-    updateCountRef.current = 0;
     
-    // Create location tracker
-    const locationTracker = createLocationTracker({
-      onLocationUpdate: (position) => {
+    // Get initial location
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const newLocation = {
+          lat: position.coords.latitude,
+          lng: position.coords.longitude
+        };
+        
+        setCurrentLocation(newLocation);
+        setLastUpdateTime(new Date().toLocaleTimeString());
+        
+        // Send location update to server
+        if (orderId) {
+          updateDriverLocation(orderId, newLocation.lat, newLocation.lng);
+        }
+      },
+      (error) => {
+        handleLocationError(error);
+      },
+      { enableHighAccuracy: true }
+    );
+    
+    // Start watching position
+    watchIdRef.current = navigator.geolocation.watchPosition(
+      (position) => {
         const newLocation = {
           lat: position.coords.latitude,
           lng: position.coords.longitude
@@ -247,39 +269,26 @@ export default function DriverTrackingPage() {
         
         // Send location update to server
         // Only send every 5th update to reduce server load
-        if (orderId && (updateCountRef.current % 5 === 0 || updateCountRef.current === 1)) {
-          sendLocationUpdate(orderId, newLocation.lat, newLocation.lng);
+        if (orderId && updateCountRef.current % 5 === 0) {
+          updateDriverLocation(orderId, newLocation.lat, newLocation.lng);
         }
       },
-      onError: (error) => {
+      (error) => {
         handleLocationError(error);
       },
-      updateInterval: 10000, // Update every 10 seconds
-      highAccuracy: true
-    });
-    
-    // Start tracking
-    locationTracker.start()
-      .then(success => {
-        if (success) {
-          locationTrackerRef.current = locationTracker;
-        } else {
-          setError("Failed to start location tracking. Please try again.");
-          setIsTracking(false);
-        }
-      })
-      .catch(error => {
-        console.error("Error starting location tracker:", error);
-        setError("Error starting location tracking: " + (error.message || "Unknown error"));
-        setIsTracking(false);
-      });
+      { 
+        enableHighAccuracy: true,
+        maximumAge: 10000,      // Accept positions that are up to 10 seconds old
+        timeout: 10000          // Wait up to 10 seconds for a position
+      }
+    );
   };
   
   // Stop tracking function
   const stopTracking = () => {
-    if (locationTrackerRef.current) {
-      locationTrackerRef.current.stop();
-      locationTrackerRef.current = null;
+    if (watchIdRef.current !== null) {
+      navigator.geolocation.clearWatch(watchIdRef.current);
+      watchIdRef.current = null;
     }
     
     setIsTracking(false);
@@ -304,69 +313,13 @@ export default function DriverTrackingPage() {
     }
     
     console.error("Geolocation error:", error);
-    setError(errorMessage);
+    setMapError(errorMessage);
     setIsTracking(false);
-  };
-  
-  // Send location update to server
-  const sendLocationUpdate = async (orderId: string, latitude: number, longitude: number) => {
-    try {
-      console.log(`Sending location update for order ${orderId}: ${latitude}, ${longitude}`);
-      
-      // Update order with driver location
-      await updateDriverLocation(orderId, latitude, longitude);
-      
-      // Check if notification was sent
-      const order = getOrderById(orderId);
-      if (order && order.notificationSent) {
-        setNotificationSent(true);
-      }
-      
-      // Update distance to customer if customer coordinates are available
-      if (order && order.gpsCoordinates) {
-        const distance = calculateDistanceToCustomer(
-          latitude,
-          longitude,
-          order.gpsCoordinates.latitude,
-          order.gpsCoordinates.longitude
-        );
-        setDistanceToCustomer(distance);
-      }
-      
-      console.log("Location update sent successfully");
-    } catch (error) {
-      console.error("Error sending location update:", error);
-      // Don't stop tracking on error, just log it
-    }
-  };
-  
-  // Calculate distance to customer
-  const calculateDistanceToCustomer = (
-    driverLat: number,
-    driverLng: number,
-    customerLat: number,
-    customerLng: number
-  ): number => {
-    // Use the Haversine formula from distanceCalculator
-    const R = 6371; // Radius of the Earth in km
-    const dLat = deg2rad(customerLat - driverLat);
-    const dLon = deg2rad(customerLng - driverLng);
-    const a = 
-      Math.sin(dLat/2) * Math.sin(dLat/2) +
-      Math.cos(deg2rad(driverLat)) * Math.cos(deg2rad(customerLat)) * 
-      Math.sin(dLon/2) * Math.sin(dLon/2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-    return R * c;
-  };
-  
-  // Helper function to convert degrees to radians
-  const deg2rad = (deg: number): number => {
-    return deg * (Math.PI/180);
   };
   
   // Force a manual location update
   const forceLocationUpdate = () => {
-    if (!isTracking || !navigator.geolocation || !orderId) return;
+    if (!isTracking || !navigator.geolocation) return;
     
     navigator.geolocation.getCurrentPosition(
       (position) => {
@@ -379,7 +332,9 @@ export default function DriverTrackingPage() {
         setLastUpdateTime(new Date().toLocaleTimeString());
         
         // Always send on manual update
-        sendLocationUpdate(orderId, newLocation.lat, newLocation.lng);
+        if (orderId) {
+          updateDriverLocation(orderId, newLocation.lat, newLocation.lng);
+        }
       },
       (error) => {
         handleLocationError(error);
@@ -387,9 +342,37 @@ export default function DriverTrackingPage() {
       { enableHighAccuracy: true }
     );
   };
-
+  
+  // Accept order function
+  const acceptOrder = () => {
+    if (orderId) {
+      updateOrderStatus(orderId, 'on our way');
+      setOrderAccepted(true);
+      
+      // Start tracking automatically when accepting order
+      if (!isTracking) {
+        startTracking();
+      }
+    }
+  };
+  
+  // Mark as delivered function
+  const markAsDelivered = () => {
+    if (orderId) {
+      updateOrderStatus(orderId, 'delivered');
+      
+      // Stop tracking when delivered
+      if (isTracking) {
+        stopTracking();
+      }
+      
+      // Navigate back to dashboard
+      navigate('/staff-dashboard');
+    }
+  };
+  
   // Generate Google Maps navigation URL
-  const getNavigationUrl = (order: Order | undefined) => {
+  const getNavigationUrl = () => {
     if (!order || !order.gpsCoordinates) {
       // If no GPS coordinates, try to use the address
       if (order && order.deliveryAddress) {
@@ -407,43 +390,40 @@ export default function DriverTrackingPage() {
     return `https://www.google.com/maps/dir/?api=1&destination=${order.gpsCoordinates.latitude},${order.gpsCoordinates.longitude}&travelmode=driving`;
   };
   
-  // Clean up on unmount
-  useEffect(() => {
-    return () => {
-      if (locationTrackerRef.current) {
-        locationTrackerRef.current.stop();
-      }
-    };
-  }, []);
+  // Generate WhatsApp link
+  const getWhatsAppLink = () => {
+    if (!order || !order.customerInfo || !order.customerInfo.phone) {
+      return '#';
+    }
+    
+    // Format phone number (remove spaces, dashes, etc.)
+    const phone = order.customerInfo.phone.replace(/\s+|-|\(|\)/g, '');
+    
+    // Create message with order details
+    const message = `Hello! I'm on my way with your order #${order.id}. I'll be delivering your items soon.`;
+    
+    return `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+  };
   
-  // If not authenticated or no order ID, show error
-  if (!authenticated || !orderId) {
+  // If no order found, show error
+  if (!order) {
     return (
       <div className="pt-20">
         <div className="container mx-auto px-6 py-8">
-          <div className="bg-white p-8 rounded-lg shadow-md max-w-md mx-auto">
+          <div className="bg-white p-8 rounded-lg shadow-md">
             <div className="flex justify-center mb-6">
               <AlertTriangle className="w-16 h-16 text-red-500" />
             </div>
-            <h2 className="text-2xl font-semibold mb-4 text-center">Access Error</h2>
-            
-            <div className="bg-red-50 border-l-4 border-red-400 p-4 mb-6">
-              <div className="flex">
-                <div className="flex-shrink-0">
-                  <AlertTriangle className="h-5 w-5 text-red-400" />
-                </div>
-                <div className="ml-3">
-                  <p className="text-sm text-red-700">{error || "Authentication required to access this page."}</p>
-                </div>
-              </div>
-            </div>
-            
-            <div className="mt-6 text-center">
+            <h2 className="text-2xl font-semibold mb-4 text-center">Order Not Found</h2>
+            <p className="text-gray-600 mb-6 text-center">
+              The order you're looking for could not be found. Please check the order ID and try again.
+            </p>
+            <div className="flex justify-center">
               <Link
-                to="/"
-                className="text-blue-600 hover:text-blue-800 text-sm"
+                to="/staff-dashboard"
+                className="bg-[#FFD700] text-gray-900 px-6 py-2 rounded-lg font-bold hover:bg-[#FFE44D] transition-colors"
               >
-                Return to Home
+                Return to Dashboard
               </Link>
             </div>
           </div>
@@ -452,47 +432,159 @@ export default function DriverTrackingPage() {
     );
   }
   
-  // Get order details
-  const order = getOrderById(orderId);
-  
-  // Added a placeholder for handleStatusUpdate function
-  const handleStatusUpdate = (orderId: string, newStatus: string) => {
-    console.log(`Order ${orderId} status updated to ${newStatus}`);
-  };
-
   return (
     <div className="pt-20">
       <div className="container mx-auto px-6 py-8">
-        <div className="flex justify-between items-center mb-6">
-          <Link 
-            to="/orders"
-            className="flex items-center text-gray-600 hover:text-gray-900"
-          >
-            <ArrowLeft className="w-5 h-5 mr-2" />
-            Back to Orders
-          </Link>
-        </div>
-        
-        <div className="bg-white rounded-lg shadow-md overflow-hidden">
-          <div className="p-4 border-b bg-blue-50">
-            <div className="flex justify-between items-center">
+        {/* Header with order info */}
+        <div className="bg-white rounded-lg shadow-md mb-6 overflow-hidden">
+          <div className="p-4 border-b flex justify-between items-center">
+            <Link 
+              to="/staff-dashboard"
+              className="flex items-center text-gray-600 hover:text-gray-900"
+            >
+              <ArrowLeft className="w-5 h-5 mr-2" />
+              Back to Dashboard
+            </Link>
+            
+            <div className="flex items-center">
+              <Clock className="w-5 h-5 mr-2 text-blue-500" />
+              <span className="text-sm text-gray-600">
+                Order Date: {new Date(order.orderDate).toLocaleDateString()}
+              </span>
+            </div>
+          </div>
+          
+          <div className="p-6">
+            {/* Product ID Display */}
+            <div className="bg-gray-100 p-4 rounded-lg mb-6 text-center">
+              <h3 className="text-sm text-gray-500 mb-1">Product ID</h3>
+              <div className="text-3xl font-bold text-gray-900">{order.id}</div>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Customer Info */}
               <div>
-                <h2 className="text-xl font-bold flex items-center">
-                  <Truck className="w-5 h-5 mr-2 text-blue-600" />
-                  Driver View - Order #{orderId}
-                </h2>
-                {order && (
-                  <p className="text-gray-600 mt-1">
-                    Delivering to: {order.customerInfo.name}
-                  </p>
-                )}
+                <h3 className="font-bold text-lg mb-2">Customer Information</h3>
+                <p className="text-gray-700 mb-1"><strong>Name:</strong> {order.customerInfo.name}</p>
+                <p className="text-gray-700 mb-1"><strong>Phone:</strong> {order.customerInfo.phone}</p>
+                <p className="text-gray-700 mb-3"><strong>Address:</strong> {order.deliveryAddress}</p>
+                
+                {/* Order Status */}
+                <div className="mt-4">
+                  <h3 className="font-bold text-lg mb-2">Order Status</h3>
+                  <div className="flex items-center">
+                    <div className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
+                      order.status === 'delivered' ? 'bg-green-100 text-green-800' :
+                      order.status === 'on our way' ? 'bg-blue-100 text-blue-800' :
+                      'bg-yellow-100 text-yellow-800'
+                    }`}>
+                      {order.status}
+                    </div>
+                    
+                    {!orderAccepted ? (
+                      <button
+                        onClick={acceptOrder}
+                        className="ml-4 bg-blue-500 text-white px-4 py-1 rounded-lg text-sm font-medium hover:bg-blue-600 transition-colors"
+                      >
+                        Accept Order
+                      </button>
+                    ) : order.status !== 'delivered' && (
+                      <button
+                        onClick={markAsDelivered}
+                        className="ml-4 bg-green-500 text-white px-4 py-1 rounded-lg text-sm font-medium hover:bg-green-600 transition-colors"
+                      >
+                        Mark as Delivered
+                      </button>
+                    )}
+                  </div>
+                </div>
               </div>
               
-              <div className="flex gap-2">
+              {/* Order Items */}
+              <div>
+                <h3 className="font-bold text-lg mb-2">Order Items</h3>
+                <div className="bg-gray-50 rounded-lg p-3">
+                  {order.items.map((item: any, index: number) => (
+                    <div key={index} className="mb-2 pb-2 border-b border-gray-200 last:border-0 last:mb-0 last:pb-0">
+                      <div className="flex justify-between">
+                        <span className="font-medium">{item.name}</span>
+                        <span>x{item.quantity}</span>
+                      </div>
+                      <div className="flex justify-between text-sm text-gray-600">
+                        <span>{item.brand}</span>
+                        <span>{item.price} THB</span>
+                      </div>
+                    </div>
+                  ))}
+                  
+                  <div className="mt-3 pt-3 border-t border-gray-300">
+                    <div className="flex justify-between text-sm">
+                      <span>Subtotal:</span>
+                      <span>{order.totalAmount} THB</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span>Delivery Fee:</span>
+                      <span>{order.deliveryFee} THB</span>
+                    </div>
+                    <div className="flex justify-between font-bold mt-1">
+                      <span>Total:</span>
+                      <span>{order.totalAmount + order.deliveryFee} THB</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        {/* Map and Action Buttons */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Map */}
+          <div className="lg:col-span-2 bg-white rounded-lg shadow-md overflow-hidden">
+            <div className="p-4 border-b">
+              <h2 className="text-xl font-bold">Delivery Map</h2>
+              
+              {/* Tracking status */}
+              {isTracking && lastUpdateTime && (
+                <div className="mt-2 bg-blue-50 p-2 rounded-lg">
+                  <div className="flex items-center text-blue-700 text-sm">
+                    <CheckCircle className="w-4 h-4 mr-1" />
+                    <span>Tracking active - Last update: {lastUpdateTime}</span>
+                  </div>
+                  {currentLocation && (
+                    <p className="text-xs text-blue-600 mt-1">
+                      Current coordinates: {currentLocation.lat.toFixed(6)}, {currentLocation.lng.toFixed(6)}
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+            
+            <div className="p-4">
+              {mapError ? (
+                <div className="bg-red-50 border-l-4 border-red-400 p-4 mb-4">
+                  <div className="flex">
+                    <div className="flex-shrink-0">
+                      <AlertTriangle className="h-5 w-5 text-red-400" />
+                    </div>
+                    <div className="ml-3">
+                      <p className="text-sm text-red-700">{mapError}</p>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div id="map" className="w-full h-[400px] rounded-lg border border-gray-200"></div>
+              )}
+            </div>
+            
+            {/* Tracking controls */}
+            <div className="p-4 border-t bg-gray-50">
+              <div className="flex flex-wrap gap-2">
                 {!isTracking ? (
                   <button
                     onClick={startTracking}
                     className="bg-green-500 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-green-600 transition-colors flex items-center gap-1"
+                    disabled={!orderAccepted}
                   >
                     <Play className="w-4 h-4" />
                     Start Tracking
@@ -503,184 +595,108 @@ export default function DriverTrackingPage() {
                       onClick={forceLocationUpdate}
                       className="bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-600 transition-colors flex items-center gap-1"
                     >
-                      <RefreshCw className="w-4 h-4" />
-                      Update Now
+                      <MapPin className="w-4 h-4" />
+                      Update Location
                     </button>
                     <button
                       onClick={stopTracking}
                       className="bg-red-500 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-red-600 transition-colors flex items-center gap-1"
                     >
                       <Square className="w-4 h-4" />
-                      Stop
+                      Stop Tracking
                     </button>
                   </>
                 )}
               </div>
             </div>
-            
-            {/* Tracking status */}
-            {isTracking && lastUpdateTime && (
-              <div className="mt-2 bg-blue-100 p-2 rounded-lg">
-                <div className="flex items-center text-blue-700 text-sm">
-                  <CheckCircle className="w-4 h-4 mr-1" />
-                  <span>Tracking active - Last update: {lastUpdateTime}</span>
-                </div>
-                {currentLocation && (
-                  <p className="text-xs text-blue-600 mt-1">
-                    Current coordinates: {currentLocation.lat.toFixed(6)}, {currentLocation.lng.toFixed(6)}
-                  </p>
-                )}
-                {distanceToCustomer !== null && (
-                  <p className="text-xs text-blue-600 mt-1">
-                    Distance to customer: {distanceToCustomer.toFixed(2)} km
-                  </p>
-                )}
-              </div>
-            )}
-            
-            {/* Notification status */}
-            {notificationSent && (
-              <div className="mt-2 bg-green-100 p-2 rounded-lg">
-                <div className="flex items-center text-green-700 text-sm">
-                  <Bell className="w-4 h-4 mr-1" />
-                  <span>Customer has been notified of your approach!</span>
-                </div>
-              </div>
-            )}
-            
-            {/* Error message */}
-            {error && (
-              <div className="mt-2 bg-red-50 border-l-4 border-red-400 p-4">
-                <div className="flex">
-                  <div className="flex-shrink-0">
-                    <AlertTriangle className="h-5 w-5 text-red-400" />
-                  </div>
-                  <div className="ml-3">
-                    <p className="text-sm text-red-700">{error}</p>
-                  </div>
-                </div>
-              </div>
-            )}
           </div>
           
-          {/* Map */}
-          <div className="p-4">
-            <div id="driver-map" className="w-full h-[400px] rounded-lg border border-gray-200"></div>
-          </div>
-          
-          {/* Order details */}
-          {order && (
-            <div className="p-4 border-t">
-              <h3 className="font-medium mb-2">Delivery Details</h3>
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-sm text-gray-500">Customer</p>
-                    <p className="font-medium">{order.customerInfo.name}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-500">Phone</p>
-                    <p className="font-medium">{order.customerInfo.phone}</p>
-                  </div>
-                  <div className="md:col-span-2">
-                    <p className="text-sm text-gray-500">Delivery Address</p>
-                    <p className="font-medium">{order.deliveryAddress}</p>
-                  </div>
-                  {order.distance && (
-                    <div>
-                      <p className="text-sm text-gray-500">Distance</p>
-                      <p className="font-medium">{order.distance.toFixed(1)} km</p>
-                    </div>
-                  )}
-                  <div>
-                    <p className="text-sm text-gray-500">Delivery Fee</p>
-                    <p className="font-medium">{order.deliveryFee.toFixed(2)} THB</p>
-                  </div>
-                </div>
+          {/* Action Buttons */}
+          <div className="lg:col-span-1">
+            <div className="bg-white rounded-lg shadow-md overflow-hidden">
+              <div className="p-4 border-b">
+                <h2 className="text-xl font-bold">Quick Actions</h2>
               </div>
               
-              <h3 className="font-medium mt-4 mb-2">Order Items</h3>
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Item</th>
-                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quantity</th>
-                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Days</th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {order.items.map((item, index) => (
-                      <tr key={index}>
-                        <td className="px-4 py-2 whitespace-nowrap text-sm">{item.name}</td>
-                        <td className="px-4 py-2 whitespace-nowrap text-sm">{item.quantity}</td>
-                        <td className="px-4 py-2 whitespace-nowrap text-sm">{item.days || 1}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-              <div className="mt-4">
-                <h3 className="font-medium mb-2 text-lg">Update Order Status</h3>
-                <select
-                  value={order.status}
-                  onChange={(e) => handleStatusUpdate(order.id, e.target.value)}
-                  className="text-lg border-2 border-gray-300 rounded-lg px-4 py-2 w-full"
-                >
-                  <option value="pending">Pending</option>
-                  <option value="payment_verification">Payment Verification</option>
-                  <option value="processing">Processing</option>
-                  <option value="on-the-way">On the Way</option>
-                  <option value="delivered">Delivered</option>
-                  <option value="completed">Completed</option>
-                </select>
-              </div>
-              <div className="mt-4">
-                <a 
-                  href={getNavigationUrl(order)}
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="bg-blue-500 text-white px-6 py-3 rounded-lg text-lg font-medium hover:bg-blue-600 transition-colors flex items-center justify-center gap-2"
-                >
-                  <Navigation className="w-5 h-5" />
-                  Navigate to Customer
-                </a>
+              <div className="p-4">
+                <div className="space-y-3">
+                  <a
+                    href={getNavigationUrl()}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center p-3 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
+                  >
+                    <Navigation className="w-5 h-5 mr-3 text-blue-600" />
+                    <span className="font-medium">Navigate to Customer</span>
+                  </a>
+                  
+                  <a
+                    href={getWhatsAppLink()}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center p-3 bg-green-50 rounded-lg hover:bg-green-100 transition-colors"
+                  >
+                    <MessageSquare className="w-5 h-5 mr-3 text-green-600" />
+                    <span className="font-medium">WhatsApp Customer</span>
+                  </a>
+                  
+                  <a
+                    href={`tel:${order.customerInfo.phone}`}
+                    className="flex items-center p-3 bg-purple-50 rounded-lg hover:bg-purple-100 transition-colors"
+                  >
+                    <Phone className="w-5 h-5 mr-3 text-purple-600" />
+                    <span className="font-medium">Call Customer</span>
+                  </a>
+                  
+                  <Link
+                    to="/staff-dashboard"
+                    className="flex items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                  >
+                    <Home className="w-5 h-5 mr-3 text-gray-600" />
+                    <span className="font-medium">Return to Dashboard</span>
+                  </Link>
+                </div>
               </div>
             </div>
-          )}
-          
-          {/* Actions */}
-          {order && (
-            <div className="p-4 border-t bg-gray-50">
-              <div className="flex flex-wrap gap-2">
-                <a 
-                  href={getNavigationUrl(order)}
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-600 transition-colors flex items-center gap-1"
-                >
-                  <MapPin className="w-4 h-4" />
-                  Navigate
-                </a>
-                
-                <a 
-                  href={`tel:${order.customerInfo.phone}`}
-                  className="bg-green-500 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-green-600 transition-colors flex items-center gap-1"
-                >
-                  <Phone className="w-4 h-4 mr-1" />
-                  Call Customer
-                </a>
-                
-                <Link 
-                  to={`/staff?order_id=${order.id}`}
-                  className="bg-[#FFD700] text-gray-900 px-4 py-2 rounded-lg text-sm font-medium hover:bg-[#FFE44D] transition-colors flex items-center gap-1"
-                >
-                  <Package className="w-4 h-4 mr-1" />
-                  Staff Dashboard
-                </Link>
+            
+            {/* Order Summary */}
+            <div className="bg-white rounded-lg shadow-md overflow-hidden mt-6">
+              <div className="p-4 border-b">
+                <h2 className="font-bold">Order Summary</h2>
+              </div>
+              
+              <div className="p-4">
+                <div className="space-y-2">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Order ID:</span>
+                    <span className="font-medium">{order.id}</span>
+                  </div>
+                  
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Items:</span>
+                    <span className="font-medium">{order.items.length}</span>
+                  </div>
+                  
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Total Amount:</span>
+                    <span className="font-medium">{order.totalAmount + order.deliveryFee} THB</span>
+                  </div>
+                  
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Payment Method:</span>
+                    <span className="font-medium">{order.paymentMethod}</span>
+                  </div>
+                  
+                  {order.distance && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Distance:</span>
+                      <span className="font-medium">{order.distance.toFixed(1)} km</span>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
-          )}
+          </div>
         </div>
       </div>
     </div>

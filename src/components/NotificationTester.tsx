@@ -1,14 +1,12 @@
 import React, { useState } from 'react';
 import { useOrders } from '../context/OrderContext';
+import { AlertTriangle, CheckCircle, Send } from 'lucide-react';
 
-/**
- * Component for testing the notification system
- */
-export default function NotificationTester() {
-  const { sendTestNotification } = useOrders();
+const NotificationTester: React.FC = () => {
   const [email, setEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [result, setResult] = useState<{ success: boolean; message: string } | null>(null);
+  const { sendTestNotification } = useOrders();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,19 +24,14 @@ export default function NotificationTester() {
     
     try {
       const response = await sendTestNotification(email);
-      
       setResult({
-        success: true,
-        message: 'Test notification sent successfully! Check your email inbox.'
+        success: response.success,
+        message: response.message || 'Test notification sent successfully'
       });
-      
-      console.log('Test notification response:', response);
     } catch (error) {
-      console.error('Error sending test notification:', error);
-      
       setResult({
         success: false,
-        message: 'Failed to send test notification. Please try again.'
+        message: error instanceof Error ? error.message : 'An error occurred'
       });
     } finally {
       setIsLoading(false);
@@ -46,12 +39,32 @@ export default function NotificationTester() {
   };
 
   return (
-    <div className="bg-white p-6 rounded-lg shadow-md">
-      <h2 className="text-xl font-bold mb-4">Test Delivery Notification</h2>
+    <div className="bg-white border border-gray-200 rounded-lg p-6">
+      <h3 className="text-lg font-bold mb-4">Test Notification System</h3>
       
-      <p className="text-gray-600 mb-4">
-        Send a test notification to verify the delivery notification system is working correctly.
+      <p className="text-gray-600 text-sm mb-4">
+        Send a test notification to verify the webhook integration with Make.com. 
+        This will simulate both the "driver approaching" and "order delivered" notifications.
       </p>
+      
+      {result && (
+        <div className={`p-4 mb-4 rounded-lg ${result.success ? 'bg-green-50' : 'bg-red-50'}`}>
+          <div className="flex">
+            <div className="flex-shrink-0">
+              {result.success ? (
+                <CheckCircle className="h-5 w-5 text-green-400" />
+              ) : (
+                <AlertTriangle className="h-5 w-5 text-red-400" />
+              )}
+            </div>
+            <div className="ml-3">
+              <p className={`text-sm ${result.success ? 'text-green-700' : 'text-red-700'}`}>
+                {result.message}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
       
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
@@ -61,53 +74,60 @@ export default function NotificationTester() {
           <input
             type="email"
             id="email"
+            placeholder="Enter email to receive test notification"
+            className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-[#FFD700] focus:border-transparent"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            placeholder="Enter your email"
-            className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-[#FFD700] focus:border-transparent"
             required
           />
         </div>
         
-        <button
-          type="submit"
-          disabled={isLoading}
-          className={`w-full bg-[#FFD700] text-gray-900 py-2 rounded-lg font-bold hover:bg-[#FFE44D] transition-colors ${
-            isLoading ? 'opacity-70 cursor-not-allowed' : ''
-          }`}
-        >
-          {isLoading ? (
-            <span className="flex items-center justify-center">
-              <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-gray-900" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
-              Sending...
-            </span>
-          ) : (
-            'Send Test Notification'
-          )}
-        </button>
+        <div className="flex items-center space-x-4">
+          <button
+            type="submit"
+            disabled={isLoading}
+            className="bg-[#FFD700] text-gray-900 px-4 py-2 rounded-lg font-medium hover:bg-[#FFE44D] transition-colors flex items-center"
+          >
+            {isLoading ? (
+              <>
+                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-gray-800" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Sending...
+              </>
+            ) : (
+              <>
+                <Send className="w-4 h-4 mr-2" />
+                Send Test Notification
+              </>
+            )}
+          </button>
+          
+          <button
+            type="button"
+            className="text-gray-600 hover:text-gray-900"
+            onClick={() => {
+              setEmail('');
+              setResult(null);
+            }}
+          >
+            Reset
+          </button>
+        </div>
       </form>
       
-      {result && (
-        <div className={`mt-4 p-4 rounded-lg ${
-          result.success ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'
-        }`}>
-          {result.message}
-        </div>
-      )}
-      
-      <div className="mt-6 border-t pt-4">
-        <h3 className="font-medium mb-2">How It Works</h3>
-        <ol className="list-decimal list-inside space-y-2 text-sm text-gray-600">
-          <li>Enter your email address to receive a test notification</li>
-          <li>The system will simulate a driver approaching your location</li>
-          <li>A webhook request is sent to Make.com</li>
-          <li>Make.com processes the request and sends an email notification</li>
-          <li>Check your inbox for the test notification email</li>
-        </ol>
+      <div className="mt-6 pt-4 border-t border-gray-200">
+        <h4 className="font-medium text-sm mb-2">Webhook Information</h4>
+        <p className="text-xs text-gray-600">
+          The test notification will be sent to Make.com using the webhook URL: 
+          <code className="bg-gray-100 px-1 py-0.5 rounded ml-1 text-xs">
+            https://hook.eu2.make.com/51kxwhrvgtagkojqethkwq5pdv2sttn0
+          </code>
+        </p>
       </div>
     </div>
   );
-}
+};
+
+export default NotificationTester;

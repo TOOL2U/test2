@@ -1,61 +1,35 @@
 import axios from 'axios';
-import { calculateDistance } from './distanceCalculator';
 import { Order, GpsCoordinates } from '../context/OrderContext';
+import { webhookService } from './webhookService';
 
-// Notification threshold distance in kilometers
-const NOTIFICATION_THRESHOLD = 1.0;
+interface DriverLocation {
+  latitude: number;
+  longitude: number;
+}
 
-// Webhook URL for Make.com integration
-const NOTIFICATION_WEBHOOK_URL = 'https://hook.eu2.make.com/li5q5trtct2rpdb2kq1o4jliglpyt2o9';
+interface NotificationResult {
+  notified: boolean;
+  distance: number;
+}
 
 /**
- * Service for handling delivery notifications
+ * Service for handling customer notifications
  */
 export const notificationService = {
   /**
-   * Check if driver is within notification threshold of customer
-   * @param driverLocation Driver's current GPS coordinates
-   * @param customerLocation Customer's GPS coordinates
-   * @returns Boolean indicating if notification should be triggered
+   * Process driver location update and send notification if needed
+   * @param order The order being delivered
+   * @param driverLocation Current driver location
+   * @returns Object with notification status and distance
    */
-  isWithinNotificationThreshold: (
-    driverLocation: GpsCoordinates,
-    customerLocation: GpsCoordinates
-  ): boolean => {
-    if (!driverLocation || !customerLocation) return false;
-    
-    const distance = calculateDistance(
-      driverLocation.latitude,
-      driverLocation.longitude,
-      customerLocation.latitude,
-      customerLocation.longitude
-    );
-    
-    return distance <= NOTIFICATION_THRESHOLD;
-  },
-  
-  /**
-   * Process driver location update and trigger notification if needed
-   * @param order Current order being delivered
-   * @param driverLocation Updated driver location
-   * @returns Promise resolving to notification status
-   */
-  processLocationUpdate: async (
-    order: Order,
-    driverLocation: GpsCoordinates
-  ): Promise<{ notified: boolean; distance: number }> => {
+  processLocationUpdate: async (order: Order, driverLocation: DriverLocation): Promise<NotificationResult> => {
     try {
-      // Skip if order or locations are missing
-      if (!order || !order.gpsCoordinates || !driverLocation) {
-        return { notified: false, distance: -1 };
+      // If order has no GPS coordinates or notification was already sent, skip
+      if (!order.gpsCoordinates || order.notificationSent) {
+        return { notified: false, distance: 0 };
       }
       
-      // Skip if notification was already sent
-      if (order.notificationSent) {
-        return { notified: false, distance: -1 };
-      }
-      
-      // Calculate current distance
+      // Calculate distance between driver and customer
       const distance = calculateDistance(
         driverLocation.latitude,
         driverLocation.longitude,
@@ -63,202 +37,131 @@ export const notificationService = {
         order.gpsCoordinates.longitude
       );
       
-      // Check if we should trigger notification
-      if (distance <= NOTIFICATION_THRESHOLD) {
+      console.log(`Distance to customer for order ${order.id}: ${distance.toFixed(2)}km`);
+      
+      // If driver is within 1km of customer and notification hasn't been sent yet
+      if (distance <= 1.0 && !order.notificationSent) {
+        console.log(`Sending arrival notification for order ${order.id}`);
+        
         // Send notification via webhook
-        await notificationService.sendArrivalNotification(order, distance);
+        await webhookService.sendOrderWebhook({
+          ...order,
+          status: 'arriving',
+          driverLocation: {
+            latitude: driverLocation.latitude,
+            longitude: driverLocation.longitude,
+            lastUpdated: new Date().toISOString()
+          }
+        });
+        
         return { notified: true, distance };
       }
       
       return { notified: false, distance };
     } catch (error) {
-      console.error('Error processing location update:', error);
-      return { notified: false, distance: -1 };
+      console.error("Error processing location update:", error);
+      return { notified: false, distance: 0 };
     }
   },
   
   /**
-   * Send arrival notification via webhook
-   * @param order Order information
-   * @param distance Current distance from customer
-   * @returns Promise resolving to webhook response
+   * Send a test notification email
+   * @param email Email address to send the test notification to
+   * @returns Promise resolving to the response or error
    */
-  sendArrivalNotification: async (order: Order, distance: number): Promise<any> => {
+  sendTestNotification: async (email: string): Promise<any> => {
     try {
-      console.log(`Sending arrival notification for order ${order.id}, distance: ${distance.toFixed(2)}km`);
+      console.log(`Sending test notification to ${email}`);
       
-      // Format estimated arrival time
-      const estimatedMinutes = Math.ceil(distance * 2); // Rough estimate: 2 minutes per km
-      const estimatedArrival = new Date();
-      estimatedArrival.setMinutes(estimatedArrival.getMinutes() + estimatedMinutes);
-      const formattedArrivalTime = estimatedArrival.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-      
-      // Prepare payload for webhook - formatted to match email body requirements
-      const payload = {
-        // Customer information
-        customer_name: order.customerInfo?.name || 'Valued Customer',
-        customer_email: order.customerInfo?.email,
-        customer_phone: order.customerInfo?.phone,
-        
-        // Order information
-        order_id: order.id,
-        order_status: order.status || 'In Transit',
-        delivery_address: order.deliveryAddress,
-        
-        // Delivery information
-        distance_km: parseFloat(distance.toFixed(2)),
-        estimated_arrival_minutes: estimatedMinutes,
-        estimated_arrival_time: formattedArrivalTime,
-        
-        // Driver information
-        driver_name: order.driverName || 'Your Driver',
-        driver_phone: order.driverPhone || 'N/A',
-        
-        // Location information
-        driver_location: {
-          latitude: order.driverLocation?.latitude,
-          longitude: order.driverLocation?.longitude,
-          last_updated: order.driverLocation?.lastUpdated || new Date().toISOString()
+      // Create a test order with the provided email
+      const testOrder: Partial<Order> = {
+        id: `TEST-${Date.now().toString().slice(-6)}`,
+        customerInfo: {
+          name: "Test Customer",
+          email: email,
+          phone: "+66123456789"
         },
-        
-        // Order details
-        order_details: {
-          items: order.items.map(item => ({
-            name: item.name,
-            quantity: item.quantity,
-            price: item.price
-          })),
-          total_amount: order.totalAmount,
-          payment_method: order.paymentMethod || 'N/A'
-        },
-        
-        // Notification metadata
-        notification_type: 'driver_approaching',
-        timestamp: new Date().toISOString()
-      };
-      
-      // Send webhook request
-      const response = await axios.post(NOTIFICATION_WEBHOOK_URL, payload, {
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      });
-      
-      console.log('Arrival notification sent successfully:', response.data);
-      return response.data;
-    } catch (error) {
-      console.error('Error sending arrival notification:', error);
-      
-      // For development/testing, simulate successful response
-      console.log('Simulating successful notification (development only)');
-      return { success: true, simulated: true };
-    }
-  },
-  
-  /**
-   * Send test notification to verify webhook integration
-   * @param customerEmail Customer email for test notification
-   * @returns Promise resolving to webhook response
-   */
-  sendTestNotification: async (customerEmail: string): Promise<any> => {
-    try {
-      console.log(`Sending test notification to ${customerEmail}`);
-      
-      // Calculate estimated arrival time (2 minutes from now)
-      const estimatedMinutes = 2;
-      const estimatedArrival = new Date();
-      estimatedArrival.setMinutes(estimatedArrival.getMinutes() + estimatedMinutes);
-      const formattedArrivalTime = estimatedArrival.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-      
-      // Create test payload that matches the email body format
-      const payload = {
-        // Customer information
-        customer_name: 'Test Customer',
-        customer_email: customerEmail,
-        customer_phone: '+66123456789',
-        
-        // Order information
-        order_id: `TEST-${Date.now().toString().slice(-6)}`,
-        order_status: 'In Transit',
-        delivery_address: '123 Test Street, Bangkok, Thailand',
-        
-        // Delivery information
-        distance_km: 1.0,
-        estimated_arrival_minutes: estimatedMinutes,
-        estimated_arrival_time: formattedArrivalTime,
-        
-        // Driver information
-        driver_name: 'Test Driver',
-        driver_phone: '+66987654321',
-        
-        // Location information
-        driver_location: {
+        status: 'arriving',
+        deliveryAddress: "123 Test Street, Bangkok, Thailand",
+        gpsCoordinates: {
           latitude: 13.756331,
-          longitude: 100.501765,
-          last_updated: new Date().toISOString()
-        },
-        
-        // Order details
-        order_details: {
-          items: [
-            { name: 'Test Product 1', quantity: 1, price: 500 },
-            { name: 'Test Product 2', quantity: 2, price: 250 }
-          ],
-          total_amount: 1000,
-          payment_method: 'Credit Card'
-        },
-        
-        // Notification metadata
-        notification_type: 'test_notification',
-        timestamp: new Date().toISOString()
+          longitude: 100.501765
+        }
       };
       
-      // Send webhook request
-      const response = await axios.post(NOTIFICATION_WEBHOOK_URL, payload, {
-        headers: {
-          'Content-Type': 'application/json'
-        }
+      // Send notification via webhook
+      const response = await webhookService.sendOrderWebhook(testOrder as Order);
+      
+      return {
+        success: true,
+        message: `Test notification sent to ${email}`,
+        response
+      };
+    } catch (error) {
+      console.error("Error sending test notification:", error);
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : String(error)
+      };
+    }
+  },
+  
+  /**
+   * Send delivery confirmation notification
+   * @param order The delivered order
+   * @returns Promise resolving to the response or error
+   */
+  sendDeliveryNotification: async (order: Order): Promise<any> => {
+    try {
+      console.log(`Sending delivery notification for order ${order.id}`);
+      
+      // Send notification via webhook
+      const response = await webhookService.sendOrderWebhook({
+        ...order,
+        status: 'delivered'
       });
       
-      console.log('Test notification sent successfully:', response.data);
-      return response.data;
+      return {
+        success: true,
+        message: `Delivery notification sent for order ${order.id}`,
+        response
+      };
     } catch (error) {
-      console.error('Error sending test notification:', error);
-      
-      // Try alternative method if axios fails
-      try {
-        console.log('Trying alternative method to send test notification');
-        
-        const payload = {
-          customer_name: 'Test Customer',
-          customer_email: customerEmail,
-          notification_type: 'test_notification',
-          timestamp: new Date().toISOString()
-        };
-        
-        // Use fetch API as an alternative
-        const fetchResponse = await fetch(NOTIFICATION_WEBHOOK_URL, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(payload),
-        });
-        
-        if (fetchResponse.ok) {
-          const data = await fetchResponse.json();
-          console.log('Test notification sent successfully using fetch:', data);
-          return data;
-        } else {
-          throw new Error(`HTTP error! status: ${fetchResponse.status}`);
-        }
-      } catch (fetchError) {
-        console.error('Alternative method also failed:', fetchError);
-        
-        // For development/testing, simulate successful response
-        console.log('Simulating successful test notification (development only)');
-        return { success: true, simulated: true };
-      }
+      console.error("Error sending delivery notification:", error);
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : String(error)
+      };
     }
   }
 };
+
+/**
+ * Calculate distance between two points using Haversine formula
+ * @param lat1 Latitude of first point
+ * @param lon1 Longitude of first point
+ * @param lat2 Latitude of second point
+ * @param lon2 Longitude of second point
+ * @returns Distance in kilometers
+ */
+function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371; // Radius of the earth in km
+  const dLat = deg2rad(lat2 - lat1);
+  const dLon = deg2rad(lon2 - lon1);
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  const distance = R * c; // Distance in km
+  return distance;
+}
+
+/**
+ * Convert degrees to radians
+ * @param deg Degrees
+ * @returns Radians
+ */
+function deg2rad(deg: number): number {
+  return deg * (Math.PI / 180);
+}

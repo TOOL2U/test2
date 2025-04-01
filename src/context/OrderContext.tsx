@@ -76,7 +76,7 @@ const sampleOrders: Order[] = [
     gpsCoordinates: { latitude: 13.756331, longitude: 100.501765 },
     distance: 15.3,
     deliveryFee: 150,
-    status: 'processing',
+    status: 'pending',
     paymentMethod: 'Credit Card',
     orderDate: '2023-05-15T08:30:00Z'
   },
@@ -95,9 +95,29 @@ const sampleOrders: Order[] = [
     gpsCoordinates: { latitude: 18.788220, longitude: 98.985933 },
     distance: 8.7,
     deliveryFee: 100,
-    status: 'delivered',
+    status: 'pending',
     paymentMethod: 'Cash on Delivery',
     orderDate: '2023-05-14T10:15:00Z'
+  },
+  {
+    id: 'ORD-24680',
+    customerInfo: {
+      name: 'Robert Johnson',
+      email: 'robert.j@example.com',
+      phone: '+66234567890'
+    },
+    items: [
+      { id: 'ITEM-4', name: 'Chainsaw', brand: 'Stihl', price: 1500, quantity: 1 },
+      { id: 'ITEM-5', name: 'Safety Helmet', brand: 'MSA', price: 300, quantity: 1 }
+    ],
+    totalAmount: 1800,
+    deliveryAddress: '789 River Rd, Phuket, Thailand',
+    gpsCoordinates: { latitude: 7.878978, longitude: 98.398392 },
+    distance: 12.4,
+    deliveryFee: 120,
+    status: 'pending',
+    paymentMethod: 'Bank Transfer',
+    orderDate: '2023-05-16T09:45:00Z'
   }
 ];
 
@@ -108,7 +128,10 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   // Add a new order
   const addOrder = (order: Order) => {
     // Calculate distance and delivery fee if coordinates are provided
-    let updatedOrder = { ...order };
+    let updatedOrder = { 
+      ...order,
+      status: 'pending' // Ensure all new orders start as pending
+    };
     
     if (order.gpsCoordinates) {
       const distance = calculateDistanceFromBusiness(
@@ -136,9 +159,21 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   // Update order status
   const updateOrderStatus = (id: string, status: string) => {
     setOrders(prevOrders => 
-      prevOrders.map(order => 
-        order.id === id ? { ...order, status } : order
-      )
+      prevOrders.map(order => {
+        if (order.id === id) {
+          const updatedOrder = { ...order, status };
+          
+          // If status is changed to "delivered", send delivery notification
+          if (status === 'delivered') {
+            notificationService.sendDeliveryNotification(updatedOrder)
+              .then(() => console.log(`Delivery notification sent for order ${id}`))
+              .catch(error => console.error('Failed to send delivery notification:', error));
+          }
+          
+          return updatedOrder;
+        }
+        return order;
+      })
     );
   };
 
