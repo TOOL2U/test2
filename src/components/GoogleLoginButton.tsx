@@ -13,12 +13,12 @@ const GoogleLoginButton: React.FC<GoogleLoginButtonProps> = ({
   onLoginError,
   className = '',
 }) => {
-  const { loginWithGoogle } = useAuth();
+  const { signupWithGoogle } = useAuth(); // Changed to signupWithGoogle
 
   const login = useGoogleLogin({
     onSuccess: async (tokenResponse) => {
       try {
-        await loginWithGoogle(tokenResponse.access_token);
+        await signupWithGoogle(tokenResponse.access_token); // Changed to signupWithGoogle
       } catch (error) {
         if (onLoginError && error instanceof Error) {
           onLoginError(error);
@@ -27,7 +27,7 @@ const GoogleLoginButton: React.FC<GoogleLoginButtonProps> = ({
     },
     onError: (error) => {
       if (onLoginError) {
-        onLoginError(new Error(error.error_description || 'Google login failed'));
+        onLoginError(new Error(error.error_description || 'Google sign-up failed'));
       }
     },
     flow: 'implicit',
@@ -38,10 +38,10 @@ const GoogleLoginButton: React.FC<GoogleLoginButtonProps> = ({
       onLoginStart();
     }
     
-    // Track login attempt
+    // Track sign-up attempt
     try {
       if (window.gtag) {
-        window.gtag('event', 'login_attempt', {
+        window.gtag('event', 'signup_attempt', {
           method: 'google',
           timestamp: new Date().toISOString()
         });
@@ -58,7 +58,7 @@ const GoogleLoginButton: React.FC<GoogleLoginButtonProps> = ({
       type="button"
       onClick={handleClick}
       className={`flex items-center justify-center w-full px-4 py-2.5 border border-gray-300 rounded-md bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors ${className}`}
-      aria-label="Sign in with Google"
+      aria-label="Sign up with Google"
     >
       <svg 
         width="18" 
@@ -73,7 +73,7 @@ const GoogleLoginButton: React.FC<GoogleLoginButtonProps> = ({
         <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
         <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
       </svg>
-      <span className="text-gray-700 font-medium">Sign in with Google</span>
+      <span className="text-gray-700 font-medium">Sign up with Google</span>
     </button>
   );
 };
