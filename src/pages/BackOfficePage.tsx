@@ -29,8 +29,6 @@ import {
   Tag,
   FileText,
   Zap,
-  Hash,
-  Layers,
   Save
 } from 'lucide-react';
 
@@ -479,7 +477,7 @@ const BackOfficePage: React.FC = () => {
   const handleEditProduct = (productId: number) => {
     const productToEdit = products.find(product => product.id === productId);
     if (productToEdit) {
-      setProductForm({ ...productToEdit });
+      setProductForm({ ...productToEdit, specifications: productToEdit.specifications || {} });
       setShowAddProductModal(true);
     }
   };

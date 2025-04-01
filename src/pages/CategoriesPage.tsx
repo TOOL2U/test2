@@ -57,7 +57,8 @@ const CategoriesPage: React.FC = () => {
       name: product.name,
       brand: product.categories[0] || 'Tool2U',
       image: product.imageUrl,
-      price: product.price
+      price: product.price,
+      deposit: product.deposit // Added missing property
     });
   };
 

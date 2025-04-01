@@ -129,7 +129,7 @@ const LoginPage: React.FC = () => {
 
   return (
     <div
-      className="h-screen w-screen bg-cover bg-center flex items-center justify-center"
+      className="h-screen w-screen bg-cover bg-center flex items-center justify-center animate-fadeIn"
       style={{
         backgroundImage: `url('https://i.imgur.com/wBQyjaK.png')`,
         backgroundSize: 'cover',
@@ -202,9 +202,8 @@ const LoginPage: React.FC = () => {
           <Button
             type="submit"
             variant="primary"
-            fullWidth
+            className="py-3 w-full" // Replaced 'fullWidth' with 'w-full' for Tailwind CSS compatibility
             disabled={isLoading || authLoading}
-            className="py-3"
           >
             {isLoading ? 'Signing in...' : 'Sign In'}
           </Button>
