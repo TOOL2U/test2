@@ -250,6 +250,17 @@ const getRealProducts = (): Product[] => {
   ];
 };
 
+// Utility function to save products to local storage
+const saveProductsToStorage = (products: Product[]) => {
+  localStorage.setItem('products', JSON.stringify(products));
+};
+
+// Utility function to load products from local storage
+const loadProductsFromStorage = (): Product[] => {
+  const storedProducts = localStorage.getItem('products');
+  return storedProducts ? JSON.parse(storedProducts) : getRealProducts();
+};
+
 // This is a service that fetches product data
 export const useProducts = () => {
   const [products, setProducts] = useState<Product[]>([]);
@@ -260,9 +271,8 @@ export const useProducts = () => {
     const fetchProducts = async () => {
       try {
         setLoading(true);
-        
-        // Use the real products data directly
-        setProducts(getRealProducts());
+        const products = loadProductsFromStorage();
+        setProducts(products);
         setLoading(false);
       } catch (err) {
         console.error('Error in product service:', err);
@@ -270,12 +280,23 @@ export const useProducts = () => {
         setLoading(false);
       }
     };
-    
+
     fetchProducts();
+
+    // Listen for product updates
+    const handleProductsUpdated = () => {
+      fetchProducts();
+    };
+
+    window.addEventListener('productsUpdated', handleProductsUpdated);
+
+    return () => {
+      window.removeEventListener('productsUpdated', handleProductsUpdated);
+    };
   }, []);
 
   return { products, loading, error };
 };
 
 // Export the real products function for testing
-export { getRealProducts };
+export { getRealProducts, saveProductsToStorage };

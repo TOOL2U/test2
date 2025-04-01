@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import Modal from '../components/Modal';
 import Input from '../components/Input';
 import Button from '../components/Button';
-import { Product, getRealProducts } from '../utils/productService';
+import { Product, getRealProducts, saveProductsToStorage } from '../utils/productService';
 import { 
   BarChart3, 
   Package, 
@@ -403,8 +403,7 @@ const BackOfficePage: React.FC = () => {
     if (!validateForm()) {
       return;
     }
-    
-    // Create new product
+
     const newProduct: Product = {
       id: products.length > 0 ? Math.max(...products.map(p => p.id)) + 1 : 1,
       name: productForm.name,
@@ -417,17 +416,16 @@ const BackOfficePage: React.FC = () => {
       voltage: productForm.voltage,
       specifications: productForm.specifications
     };
-    
-    // Add to products list
-    setProducts([...products, newProduct]);
-    
-    // Update stats
+
+    const updatedProducts = [...products, newProduct];
+    setProducts(updatedProducts);
+    saveProductsToStorage(updatedProducts); // Save to local storage
+
     setStats({
       ...stats,
       totalProducts: stats.totalProducts + 1
     });
-    
-    // Show success notification
+
     setNotifications([
       { 
         id: `not-${Date.now()}`, 
@@ -436,29 +434,28 @@ const BackOfficePage: React.FC = () => {
       },
       ...notifications
     ]);
-    
-    // Close modal and reset form
+
     setShowAddProductModal(false);
     setProductForm(initialProductForm);
     setFormErrors({});
-    
-    // Notify other components
-    notifyProductChange();
 
-    // Show success message
+    notifyProductChange(); // Notify other components
+
     alert(`Product "${newProduct.name}" has been added successfully!`);
   };
 
   const handleDeleteProduct = (productId: number) => {
     if (window.confirm('Are you sure you want to delete this product?')) {
-      setProducts(products.filter(product => product.id !== productId));
+      const updatedProducts = products.filter(product => product.id !== productId);
+      setProducts(updatedProducts);
+      saveProductsToStorage(updatedProducts); // Save to local storage
+
       setStats({
         ...stats,
         totalProducts: stats.totalProducts - 1
       });
 
-      // Notify other components
-      notifyProductChange();
+      notifyProductChange(); // Notify other components
 
       alert('Product deleted successfully!');
     }
