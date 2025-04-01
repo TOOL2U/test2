@@ -54,22 +54,6 @@ function ProcessStep({ number, title, description }: { number: number, title: st
   );
 }
 
-function ToolCategory({ icon: Icon, name, image }: { icon: any, name: string, image: string }) {
-  return (
-    <div className="relative group overflow-hidden rounded-lg">
-      <img 
-        src={image} 
-        alt={name}
-        className="w-full h-64 object-cover transition-transform duration-300 group-hover:scale-110"
-      />
-      <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent flex flex-col justify-end p-6">
-        <Icon className="w-12 h-12 text-[#FFD700] mb-3 transform transition-transform duration-250 group-hover:scale-110" />
-        <h3 className="text-xl font-bold text-white transform transition-transform duration-250 group-hover:translate-x-2">{name}</h3>
-      </div>
-    </div>
-  );
-}
-
 function PricingCard({ title, price, features }: { title: string, price: string, features: string[] }) {
   return (
     <div className="bg-white rounded-lg shadow-xl p-8 hover:shadow-2xl transition-shadow duration-250 hover:translate-y-[-5px] transform transition-transform">
@@ -195,37 +179,6 @@ const HomePage = () => {
               icon={DollarSign}
               title="Cost-Effective"
               description="Save money by renting professional tools instead of buying. No maintenance costs."
-            />
-          </StaggeredList>
-        </div>
-      </section>
-
-      {/* Tool Categories */}
-      <section className="py-20 bg-gray-100" id="tools">
-        <div className="container mx-auto px-6">
-          <AnimateOnScroll>
-            <h2 className="text-4xl font-bold text-center mb-16">Popular Categories</h2>
-          </AnimateOnScroll>
-          <StaggeredList className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <ToolCategory 
-              icon={Drill} 
-              name="Power Tools" 
-              image="https://images.unsplash.com/photo-1572981779307-38b8cabb2407?auto=format&fit=crop&q=80"
-            />
-            <ToolCategory 
-              icon={Wrench} 
-              name="Hand Tools" 
-              image="https://images.unsplash.com/photo-1581147036324-c1c88bb273b4?auto=format&fit=crop&q=80"
-            />
-            <ToolCategory 
-              icon={Hammer} 
-              name="Construction" 
-              image="https://images.unsplash.com/photo-1504917595217-d4dc5ebe6122?auto=format&fit=crop&q=80"
-            />
-            <ToolCategory 
-              icon={Saw} 
-              name="Woodworking" 
-              image="https://images.unsplash.com/photo-1575908539614-ff89490f4a78?auto=format&fit=crop&q=80"
             />
           </StaggeredList>
         </div>
