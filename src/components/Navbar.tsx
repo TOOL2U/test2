@@ -42,11 +42,11 @@ const Navbar: React.FC = () => {
 
   return (
     <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-      isScrolled ? 'bg-black shadow-lg py-1' : 'bg-black/90 backdrop-blur-sm py-2'
+      isScrolled ? 'bg-black shadow-lg py-2' : 'bg-black/90 backdrop-blur-sm py-4'
     }`}>
       <div className="container mx-auto px-6 flex justify-between items-center">
         <Link to="/" className="flex items-center group">
-          <Logo className="h-24 w-auto transition-transform duration-300 group-hover:scale-110" variant="dark" />
+          <Logo className="h-10 w-auto transition-transform duration-300 group-hover:scale-110" variant="dark" />
         </Link>
 
         {/* Desktop Navigation */}

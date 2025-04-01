@@ -5,7 +5,6 @@ import Button from '../components/Button';
 import { User, Lock, LogIn, AlertCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import GoogleLoginButton from '../components/GoogleLoginButton';
-import Modal from '../components/Modal'; // Assuming a Modal component exists
 
 const LoginPage: React.FC = () => {
   const navigate = useNavigate();
@@ -27,10 +26,6 @@ const LoginPage: React.FC = () => {
   const [loginError, setLoginError] = useState('');
   const [googleLoginError, setGoogleLoginError] = useState('');
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
-  const [isForgotPasswordOpen, setIsForgotPasswordOpen] = useState(false);
-  const [email, setEmail] = useState('');
-  const [emailError, setEmailError] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Track page view for analytics
   useEffect(() => {
@@ -130,28 +125,6 @@ const LoginPage: React.FC = () => {
     setIsGoogleLoading(false);
   };
 
-  const handleForgotPassword = async () => {
-    if (!email.trim()) {
-      setEmailError('Email is required');
-      return;
-    }
-
-    setIsSubmitting(true);
-    setEmailError('');
-
-    try {
-      // Simulate sending a password reset link
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      alert('Password reset link sent to your email');
-      setIsForgotPasswordOpen(false);
-      setEmail('');
-    } catch (error) {
-      setEmailError('Failed to send password reset link. Please try again.');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
   // When Google login is successful, the redirect happens in the AuthContext
 
   return (
@@ -219,13 +192,10 @@ const LoginPage: React.FC = () => {
               </label>
             </div>
             
-            <div className="text-sm text-right">
-              <button
-                onClick={() => setIsForgotPasswordOpen(true)}
-                className="font-medium text-[#FFD700] hover:text-[#FFD700]/80"
-              >
+            <div className="text-sm">
+              <a href="#" className="font-medium text-[#FFD700] hover:text-[#FFD700]/80">
                 Forgot password?
-              </button>
+              </a>
             </div>
           </div>
           
@@ -279,30 +249,6 @@ const LoginPage: React.FC = () => {
           </p>
         </div>
       </div>
-
-      {isForgotPasswordOpen && (
-        <Modal onClose={() => setIsForgotPasswordOpen(false)}>
-          <div className="p-6 bg-white rounded-lg shadow-lg">
-            <h2 className="text-lg font-bold mb-4">Reset Password</h2>
-            <p className="text-sm text-gray-600 mb-4">Enter your email address to receive a password reset link.</p>
-            <input
-              type="email"
-              placeholder="Enter your email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full p-2 border border-gray-300 rounded mb-2"
-            />
-            {emailError && <p className="text-sm text-red-600 mb-2">{emailError}</p>}
-            <button
-              onClick={handleForgotPassword}
-              disabled={isSubmitting}
-              className="w-full bg-[#FFD700] text-gray-900 py-2 rounded font-bold hover:bg-[#FFE44D] transition"
-            >
-              {isSubmitting ? 'Sending...' : 'Send Reset Link'}
-            </button>
-          </div>
-        </Modal>
-      )}
     </div>
   );
 };

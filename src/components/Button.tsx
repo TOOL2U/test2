@@ -32,14 +32,13 @@ export interface ButtonProps
   extends ButtonHTMLAttributes<HTMLButtonElement>,
     VariantProps<typeof buttonVariants> {
   asChild?: boolean;
-  fullWidth?: boolean; // Added fullWidth prop
 }
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant, size, asChild = false, fullWidth = false, ...props }, ref) => {
+  ({ className, variant, size, asChild = false, ...props }, ref) => {
     return (
       <button
-        className={`${buttonVariants({ variant, size })} ${className || ''} ${fullWidth ? 'w-full' : ''}`}
+        className={`${buttonVariants({ variant, size })} ${className || ''}`}
         ref={ref}
         {...props}
       />

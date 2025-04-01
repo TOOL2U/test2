@@ -414,29 +414,23 @@ const HomePage = () => {
       </section>
 
       {/* Footer */}
-      <footer className="bg-gray-900 text-white py-1">
+      <footer className="bg-gray-900 text-white py-12">
         <div className="container mx-auto px-6">
           <div className="text-center">
-            <Logo variant="light" className="mx-auto mb-2" />
-            <p className="opacity-75 text-sm">Professional tools delivered to your doorstep</p>
-            <div className="mt-2">
+            <Logo variant="light" className="mx-auto mb-6" />
+            <p className="opacity-75">Professional tools delivered to your doorstep</p>
+            <div className="mt-6">
               <a 
                 href="https://www.facebook.com/profile.php?id=61574673543654" 
                 target="_blank" 
                 rel="noopener noreferrer" 
-                className="text-[#FFD700] hover:underline text-sm"
+                className="text-[#FFD700] hover:underline"
               >
                 Follow us on Facebook
               </a>
             </div>
-            <div className="mt-2">
-              <p className="opacity-75 text-sm">© 2024 Tool2U. All rights reserved.</p>
-            </div>
-            <div className="mt-2">
-              <h3 className="text-sm font-bold mb-1">Contact Us</h3>
-              <p className="text-sm">Email: <a href="mailto:contact@tool2u.com" className="text-[#FFD700] hover:underline">contact@tool2u.com</a></p>
-              <p className="text-sm">Phone: <a href="tel:+1234567890" className="text-[#FFD700] hover:underline">+1 234 567 890</a></p>
-              <p className="text-sm">Address: 123 Tool Street, Tool City, TC 12345</p>
+            <div className="mt-6">
+              <p className="opacity-75">© 2024 Tool2U. All rights reserved.</p>
             </div>
           </div>
         </div>
