@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { useOrders } from '../context/OrderContext';
+import { createLocationTracker, positionToCoordinates } from '../utils/locationTracker';
 import { 
   ArrowLeft, 
   MapPin, 
@@ -12,7 +13,8 @@ import {
   RefreshCw,
   Package,
   Phone,
-  Navigation
+  Navigation,
+  Bell
 } from 'lucide-react';
 
 export default function DriverTrackingPage() {
@@ -28,6 +30,8 @@ export default function DriverTrackingPage() {
   const [mapLoaded, setMapLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [authenticated, setAuthenticated] = useState(false);
+  const [notificationSent, setNotificationSent] = useState(false);
+  const [distanceToCustomer, setDistanceToCustomer] = useState<number | null>(null);
   
   // Refs
   const watchIdRef = useRef<number | null>(null);
@@ -35,6 +39,7 @@ export default function DriverTrackingPage() {
   const driverMarkerRef = useRef<any>(null);
   const customerMarkerRef = useRef<any>(null);
   const updateCountRef = useRef<number>(0);
+  const locationTrackerRef = useRef<any>(null);
   
   // Check if we have a valid order and staff code
   useEffect(() => {
@@ -226,31 +231,9 @@ export default function DriverTrackingPage() {
     setIsTracking(true);
     updateCountRef.current = 0;
     
-    // Get initial location
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        const newLocation = {
-          lat: position.coords.latitude,
-          lng: position.coords.longitude
-        };
-        
-        setCurrentLocation(newLocation);
-        setLastUpdateTime(new Date().toLocaleTimeString());
-        
-        // Send location update to server
-        if (orderId) {
-          sendLocationUpdate(orderId, newLocation.lat, newLocation.lng);
-        }
-      },
-      (error) => {
-        handleLocationError(error);
-      },
-      { enableHighAccuracy: true }
-    );
-    
-    // Start watching position
-    watchIdRef.current = navigator.geolocation.watchPosition(
-      (position) => {
+    // Create location tracker
+    const locationTracker = createLocationTracker({
+      onLocationUpdate: (position) => {
         const newLocation = {
           lat: position.coords.latitude,
           lng: position.coords.longitude
@@ -264,26 +247,39 @@ export default function DriverTrackingPage() {
         
         // Send location update to server
         // Only send every 5th update to reduce server load
-        if (orderId && updateCountRef.current % 5 === 0) {
+        if (orderId && (updateCountRef.current % 5 === 0 || updateCountRef.current === 1)) {
           sendLocationUpdate(orderId, newLocation.lat, newLocation.lng);
         }
       },
-      (error) => {
+      onError: (error) => {
         handleLocationError(error);
       },
-      { 
-        enableHighAccuracy: true,
-        maximumAge: 10000,      // Accept positions that are up to 10 seconds old
-        timeout: 10000          // Wait up to 10 seconds for a position
-      }
-    );
+      updateInterval: 10000, // Update every 10 seconds
+      highAccuracy: true
+    });
+    
+    // Start tracking
+    locationTracker.start()
+      .then(success => {
+        if (success) {
+          locationTrackerRef.current = locationTracker;
+        } else {
+          setError("Failed to start location tracking. Please try again.");
+          setIsTracking(false);
+        }
+      })
+      .catch(error => {
+        console.error("Error starting location tracker:", error);
+        setError("Error starting location tracking: " + (error.message || "Unknown error"));
+        setIsTracking(false);
+      });
   };
   
   // Stop tracking function
   const stopTracking = () => {
-    if (watchIdRef.current !== null) {
-      navigator.geolocation.clearWatch(watchIdRef.current);
-      watchIdRef.current = null;
+    if (locationTrackerRef.current) {
+      locationTrackerRef.current.stop();
+      locationTrackerRef.current = null;
     }
     
     setIsTracking(false);
@@ -320,11 +316,52 @@ export default function DriverTrackingPage() {
       // Update order with driver location
       await updateDriverLocation(orderId, latitude, longitude);
       
+      // Check if notification was sent
+      const order = getOrderById(orderId);
+      if (order && order.notificationSent) {
+        setNotificationSent(true);
+      }
+      
+      // Update distance to customer if customer coordinates are available
+      if (order && order.gpsCoordinates) {
+        const distance = calculateDistanceToCustomer(
+          latitude,
+          longitude,
+          order.gpsCoordinates.latitude,
+          order.gpsCoordinates.longitude
+        );
+        setDistanceToCustomer(distance);
+      }
+      
       console.log("Location update sent successfully");
     } catch (error) {
       console.error("Error sending location update:", error);
       // Don't stop tracking on error, just log it
     }
+  };
+  
+  // Calculate distance to customer
+  const calculateDistanceToCustomer = (
+    driverLat: number,
+    driverLng: number,
+    customerLat: number,
+    customerLng: number
+  ): number => {
+    // Use the Haversine formula from distanceCalculator
+    const R = 6371; // Radius of the Earth in km
+    const dLat = deg2rad(customerLat - driverLat);
+    const dLon = deg2rad(customerLng - driverLng);
+    const a = 
+      Math.sin(dLat/2) * Math.sin(dLat/2) +
+      Math.cos(deg2rad(driverLat)) * Math.cos(deg2rad(customerLat)) * 
+      Math.sin(dLon/2) * Math.sin(dLon/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    return R * c;
+  };
+  
+  // Helper function to convert degrees to radians
+  const deg2rad = (deg: number): number => {
+    return deg * (Math.PI/180);
   };
   
   // Force a manual location update
@@ -373,8 +410,8 @@ export default function DriverTrackingPage() {
   // Clean up on unmount
   useEffect(() => {
     return () => {
-      if (watchIdRef.current !== null) {
-        navigator.geolocation.clearWatch(watchIdRef.current);
+      if (locationTrackerRef.current) {
+        locationTrackerRef.current.stop();
       }
     };
   }, []);
@@ -479,36 +516,51 @@ export default function DriverTrackingPage() {
                   </>
                 )}
               </div>
-              
-              {/* Tracking status */}
-              {isTracking && lastUpdateTime && (
-                <div className="mt-2 bg-blue-100 p-2 rounded-lg">
-                  <div className="flex items-center text-blue-700 text-sm">
-                    <CheckCircle className="w-4 h-4 mr-1" />
-                    <span>Tracking active - Last update: {lastUpdateTime}</span>
-                  </div>
-                  {currentLocation && (
-                    <p className="text-xs text-blue-600 mt-1">
-                      Current coordinates: {currentLocation.lat.toFixed(6)}, {currentLocation.lng.toFixed(6)}
-                    </p>
-                  )}
-                </div>
-              )}
-              
-              {/* Error message */}
-              {error && (
-                <div className="mt-2 bg-red-50 border-l-4 border-red-400 p-4">
-                  <div className="flex">
-                    <div className="flex-shrink-0">
-                      <AlertTriangle className="h-5 w-5 text-red-400" />
-                    </div>
-                    <div className="ml-3">
-                      <p className="text-sm text-red-700">{error}</p>
-                    </div>
-                  </div>
-                </div>
-              )}
             </div>
+            
+            {/* Tracking status */}
+            {isTracking && lastUpdateTime && (
+              <div className="mt-2 bg-blue-100 p-2 rounded-lg">
+                <div className="flex items-center text-blue-700 text-sm">
+                  <CheckCircle className="w-4 h-4 mr-1" />
+                  <span>Tracking active - Last update: {lastUpdateTime}</span>
+                </div>
+                {currentLocation && (
+                  <p className="text-xs text-blue-600 mt-1">
+                    Current coordinates: {currentLocation.lat.toFixed(6)}, {currentLocation.lng.toFixed(6)}
+                  </p>
+                )}
+                {distanceToCustomer !== null && (
+                  <p className="text-xs text-blue-600 mt-1">
+                    Distance to customer: {distanceToCustomer.toFixed(2)} km
+                  </p>
+                )}
+              </div>
+            )}
+            
+            {/* Notification status */}
+            {notificationSent && (
+              <div className="mt-2 bg-green-100 p-2 rounded-lg">
+                <div className="flex items-center text-green-700 text-sm">
+                  <Bell className="w-4 h-4 mr-1" />
+                  <span>Customer has been notified of your approach!</span>
+                </div>
+              </div>
+            )}
+            
+            {/* Error message */}
+            {error && (
+              <div className="mt-2 bg-red-50 border-l-4 border-red-400 p-4">
+                <div className="flex">
+                  <div className="flex-shrink-0">
+                    <AlertTriangle className="h-5 w-5 text-red-400" />
+                  </div>
+                  <div className="ml-3">
+                    <p className="text-sm text-red-700">{error}</p>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
           
           {/* Map */}
