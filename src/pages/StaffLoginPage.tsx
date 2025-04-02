@@ -30,21 +30,18 @@ const StaffLoginPage: React.FC = () => {
     setIsLoading(true);
 
     try {
-      // For demo purposes, we'll use simple validation
-      // In production, this would connect to a secure authentication system
-      const validCredentials: Record<string, { password: string, role: string, name: string }> = {
-        'DRIVER123': { password: 'driver123', role: 'driver', name: 'John Driver' },
-        'DRIVER456': { password: 'driver456', role: 'driver', name: 'Sarah Driver' },
-        'OWNER789': { password: 'owner789', role: 'owner', name: 'Owner Admin' },
-        'ADMIN123': { password: 'admin123', role: 'admin', name: 'System Admin' }
-      };
+      // Check for staff credentials in localStorage
+      const storedStaffUsers = JSON.parse(localStorage.getItem('staffUsers') || '[]');
+      const foundStaffUser = storedStaffUsers.find((user: any) => 
+        user.username === staffCode && user.password === password
+      );
 
-      if (validCredentials[staffCode] && validCredentials[staffCode].password === password) {
+      if (foundStaffUser) {
         // Use the auth context login method
         const success = await login(staffCode, password);
         
         if (success) {
-          console.log(`Staff authenticated: ${validCredentials[staffCode].name} (${validCredentials[staffCode].role})`);
+          console.log(`Staff authenticated: ${foundStaffUser.name} (${foundStaffUser.role})`);
           navigate('/staff-dashboard');
         } else {
           setError('Authentication failed. Please try again.');

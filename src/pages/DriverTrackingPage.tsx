@@ -13,7 +13,10 @@ import {
   MessageSquare,
   Package,
   Home,
-  Clock
+  Clock,
+  Tag,
+  Truck,
+  Check
 } from 'lucide-react';
 
 export default function DriverTrackingPage() {
@@ -435,186 +438,85 @@ export default function DriverTrackingPage() {
   return (
     <div className="pt-20">
       <div className="container mx-auto px-6 py-8">
-        {/* Header with order info */}
-        <div className="bg-white rounded-lg shadow-md mb-6 overflow-hidden">
-          <div className="p-4 border-b flex justify-between items-center">
-            <Link 
-              to="/staff-dashboard"
-              className="flex items-center text-gray-600 hover:text-gray-900"
-            >
-              <ArrowLeft className="w-5 h-5 mr-2" />
-              Back to Dashboard
-            </Link>
-            
+        {/* Header with back button and order status */}
+        <div className="flex justify-between items-center mb-4">
+          <Link 
+            to="/staff-dashboard"
+            className="flex items-center text-gray-600 hover:text-gray-900"
+          >
+            <ArrowLeft className="w-5 h-5 mr-2" />
+            Back to Dashboard
+          </Link>
+          
+          <div className="flex items-center gap-3">
             <div className="flex items-center">
               <Clock className="w-5 h-5 mr-2 text-blue-500" />
               <span className="text-sm text-gray-600">
                 Order Date: {new Date(order.orderDate).toLocaleDateString()}
               </span>
             </div>
-          </div>
-          
-          <div className="p-6">
-            {/* Product ID Display */}
-            <div className="bg-gray-100 p-4 rounded-lg mb-6 text-center">
-              <h3 className="text-sm text-gray-500 mb-1">Product ID</h3>
-              <div className="text-3xl font-bold text-gray-900">{order.id}</div>
-            </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Customer Info */}
-              <div>
-                <h3 className="font-bold text-lg mb-2">Customer Information</h3>
-                <p className="text-gray-700 mb-1"><strong>Name:</strong> {order.customerInfo.name}</p>
-                <p className="text-gray-700 mb-1"><strong>Phone:</strong> {order.customerInfo.phone}</p>
-                <p className="text-gray-700 mb-3"><strong>Address:</strong> {order.deliveryAddress}</p>
-                
-                {/* Order Status */}
-                <div className="mt-4">
-                  <h3 className="font-bold text-lg mb-2">Order Status</h3>
-                  <div className="flex items-center">
-                    <div className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
-                      order.status === 'delivered' ? 'bg-green-100 text-green-800' :
-                      order.status === 'on our way' ? 'bg-blue-100 text-blue-800' :
-                      'bg-yellow-100 text-yellow-800'
-                    }`}>
-                      {order.status}
-                    </div>
-                    
-                    {!orderAccepted ? (
-                      <button
-                        onClick={acceptOrder}
-                        className="ml-4 bg-blue-500 text-white px-4 py-1 rounded-lg text-sm font-medium hover:bg-blue-600 transition-colors"
-                      >
-                        Accept Order
-                      </button>
-                    ) : order.status !== 'delivered' && (
-                      <button
-                        onClick={markAsDelivered}
-                        className="ml-4 bg-green-500 text-white px-4 py-1 rounded-lg text-sm font-medium hover:bg-green-600 transition-colors"
-                      >
-                        Mark as Delivered
-                      </button>
-                    )}
-                  </div>
-                </div>
-              </div>
-              
-              {/* Order Items */}
-              <div>
-                <h3 className="font-bold text-lg mb-2">Order Items</h3>
-                <div className="bg-gray-50 rounded-lg p-3">
-                  {order.items.map((item: any, index: number) => (
-                    <div key={index} className="mb-2 pb-2 border-b border-gray-200 last:border-0 last:mb-0 last:pb-0">
-                      <div className="flex justify-between">
-                        <span className="font-medium">{item.name}</span>
-                        <span>x{item.quantity}</span>
-                      </div>
-                      <div className="flex justify-between text-sm text-gray-600">
-                        <span>{item.brand}</span>
-                        <span>{item.price} THB</span>
-                      </div>
-                    </div>
-                  ))}
-                  
-                  <div className="mt-3 pt-3 border-t border-gray-300">
-                    <div className="flex justify-between text-sm">
-                      <span>Subtotal:</span>
-                      <span>{order.totalAmount} THB</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span>Delivery Fee:</span>
-                      <span>{order.deliveryFee} THB</span>
-                    </div>
-                    <div className="flex justify-between font-bold mt-1">
-                      <span>Total:</span>
-                      <span>{order.totalAmount + order.deliveryFee} THB</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
+            <div className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
+              order.status === 'delivered' ? 'bg-green-100 text-green-800' :
+              order.status === 'on our way' ? 'bg-blue-100 text-blue-800' :
+              'bg-yellow-100 text-yellow-800'
+            }`}>
+              {order.status}
             </div>
           </div>
         </div>
         
-        {/* Map and Action Buttons */}
+        {/* Main content grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Map */}
-          <div className="lg:col-span-2 bg-white rounded-lg shadow-md overflow-hidden">
-            <div className="p-4 border-b">
-              <h2 className="text-xl font-bold">Delivery Map</h2>
+          {/* Left column: Order details and items */}
+          <div className="lg:col-span-1">
+            {/* Order ID and Status Card */}
+            <div className="bg-white rounded-lg shadow-md overflow-hidden mb-6">
+              <div className="p-4 border-b bg-gray-50">
+                <h2 className="text-xl font-bold">Order Information</h2>
+              </div>
               
-              {/* Tracking status */}
-              {isTracking && lastUpdateTime && (
-                <div className="mt-2 bg-blue-50 p-2 rounded-lg">
-                  <div className="flex items-center text-blue-700 text-sm">
-                    <CheckCircle className="w-4 h-4 mr-1" />
-                    <span>Tracking active - Last update: {lastUpdateTime}</span>
-                  </div>
-                  {currentLocation && (
-                    <p className="text-xs text-blue-600 mt-1">
-                      Current coordinates: {currentLocation.lat.toFixed(6)}, {currentLocation.lng.toFixed(6)}
-                    </p>
+              <div className="p-4">
+                {/* Order ID Display */}
+                <div className="bg-blue-50 p-4 rounded-lg mb-4 text-center border-2 border-blue-200">
+                  <h3 className="text-sm text-blue-700 mb-1">Order ID</h3>
+                  <div className="text-2xl font-bold text-blue-900">{order.id}</div>
+                </div>
+                
+                {/* Customer Info */}
+                <div className="mb-4">
+                  <h3 className="font-bold text-lg mb-2">Customer</h3>
+                  <p className="text-gray-700 mb-1"><strong>Name:</strong> {order.customerInfo.name}</p>
+                  <p className="text-gray-700 mb-1"><strong>Phone:</strong> {order.customerInfo.phone}</p>
+                  <p className="text-gray-700 mb-3"><strong>Address:</strong> {order.deliveryAddress}</p>
+                </div>
+                
+                {/* Order Status Actions */}
+                <div className="flex flex-col gap-2">
+                  {!orderAccepted ? (
+                    <button
+                      onClick={acceptOrder}
+                      className="w-full bg-blue-500 text-white px-4 py-3 rounded-lg font-medium hover:bg-blue-600 transition-colors flex items-center justify-center gap-2"
+                    >
+                      <Truck className="w-5 h-5" />
+                      Accept Order & Start Delivery
+                    </button>
+                  ) : order.status !== 'delivered' && (
+                    <button
+                      onClick={markAsDelivered}
+                      className="w-full bg-green-500 text-white px-4 py-3 rounded-lg font-medium hover:bg-green-600 transition-colors flex items-center justify-center gap-2"
+                    >
+                      <Check className="w-5 h-5" />
+                      Mark as Delivered
+                    </button>
                   )}
                 </div>
-              )}
-            </div>
-            
-            <div className="p-4">
-              {mapError ? (
-                <div className="bg-red-50 border-l-4 border-red-400 p-4 mb-4">
-                  <div className="flex">
-                    <div className="flex-shrink-0">
-                      <AlertTriangle className="h-5 w-5 text-red-400" />
-                    </div>
-                    <div className="ml-3">
-                      <p className="text-sm text-red-700">{mapError}</p>
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <div id="map" className="w-full h-[400px] rounded-lg border border-gray-200"></div>
-              )}
-            </div>
-            
-            {/* Tracking controls */}
-            <div className="p-4 border-t bg-gray-50">
-              <div className="flex flex-wrap gap-2">
-                {!isTracking ? (
-                  <button
-                    onClick={startTracking}
-                    className="bg-green-500 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-green-600 transition-colors flex items-center gap-1"
-                    disabled={!orderAccepted}
-                  >
-                    <Play className="w-4 h-4" />
-                    Start Tracking
-                  </button>
-                ) : (
-                  <>
-                    <button
-                      onClick={forceLocationUpdate}
-                      className="bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-600 transition-colors flex items-center gap-1"
-                    >
-                      <MapPin className="w-4 h-4" />
-                      Update Location
-                    </button>
-                    <button
-                      onClick={stopTracking}
-                      className="bg-red-500 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-red-600 transition-colors flex items-center gap-1"
-                    >
-                      <Square className="w-4 h-4" />
-                      Stop Tracking
-                    </button>
-                  </>
-                )}
               </div>
             </div>
-          </div>
-          
-          {/* Action Buttons */}
-          <div className="lg:col-span-1">
-            <div className="bg-white rounded-lg shadow-md overflow-hidden">
-              <div className="p-4 border-b">
+            
+            {/* Quick Actions Card */}
+            <div className="bg-white rounded-lg shadow-md overflow-hidden mb-6">
+              <div className="p-4 border-b bg-gray-50">
                 <h2 className="text-xl font-bold">Quick Actions</h2>
               </div>
               
@@ -658,40 +560,140 @@ export default function DriverTrackingPage() {
                 </div>
               </div>
             </div>
-            
-            {/* Order Summary */}
-            <div className="bg-white rounded-lg shadow-md overflow-hidden mt-6">
-              <div className="p-4 border-b">
-                <h2 className="font-bold">Order Summary</h2>
+          </div>
+          
+          {/* Middle column: Order Items */}
+          <div className="lg:col-span-1">
+            <div className="bg-white rounded-lg shadow-md overflow-hidden">
+              <div className="p-4 border-b bg-gray-50">
+                <h2 className="text-xl font-bold">Order Items</h2>
               </div>
               
               <div className="p-4">
-                <div className="space-y-2">
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Order ID:</span>
-                    <span className="font-medium">{order.id}</span>
-                  </div>
-                  
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Items:</span>
-                    <span className="font-medium">{order.items.length}</span>
-                  </div>
-                  
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Total Amount:</span>
-                    <span className="font-medium">{order.totalAmount + order.deliveryFee} THB</span>
-                  </div>
-                  
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Payment Method:</span>
-                    <span className="font-medium">{order.paymentMethod}</span>
-                  </div>
-                  
-                  {order.distance && (
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Distance:</span>
-                      <span className="font-medium">{order.distance.toFixed(1)} km</span>
+                <div className="space-y-4">
+                  {order.items.map((item: any, index: number) => (
+                    <div key={index} className="bg-white border border-gray-200 rounded-lg p-3 hover:shadow-md transition-shadow">
+                      {/* Product ID Badge */}
+                      <div className="bg-blue-600 text-white text-sm font-bold px-3 py-1 rounded-md flex items-center mb-2 w-fit">
+                        <Tag className="w-4 h-4 mr-1" />
+                        {item.id || `PROD-${index + 1}`}
+                      </div>
+                      
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <h3 className="font-bold text-lg">{item.name}</h3>
+                          <p className="text-gray-600 text-sm">{item.brand}</p>
+                        </div>
+                        <div className="text-right">
+                          <div className="font-bold text-lg">{item.price} THB</div>
+                          <div className="text-sm text-gray-600">Qty: {item.quantity}</div>
+                          {item.days && <div className="text-sm text-gray-600">Days: {item.days}</div>}
+                        </div>
+                      </div>
                     </div>
+                  ))}
+                </div>
+                
+                {/* Order Summary */}
+                <div className="mt-6 pt-4 border-t border-gray-200">
+                  <div className="flex justify-between text-sm mb-1">
+                    <span className="text-gray-600">Subtotal:</span>
+                    <span className="font-medium">{order.totalAmount} THB</span>
+                  </div>
+                  <div className="flex justify-between text-sm mb-1">
+                    <span className="text-gray-600">Delivery Fee:</span>
+                    <span className="font-medium">{order.deliveryFee} THB</span>
+                  </div>
+                  <div className="flex justify-between text-lg mt-2 pt-2 border-t border-gray-200">
+                    <span className="font-bold">Total:</span>
+                    <span className="font-bold">{order.totalAmount + order.deliveryFee} THB</span>
+                  </div>
+                  
+                  <div className="mt-4 bg-gray-50 p-3 rounded-lg">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600">Payment Method:</span>
+                      <span className="font-medium">{order.paymentMethod}</span>
+                    </div>
+                    {order.distance && (
+                      <div className="flex justify-between text-sm mt-1">
+                        <span className="text-gray-600">Distance:</span>
+                        <span className="font-medium">{order.distance.toFixed(1)} km</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          {/* Right column: Map */}
+          <div className="lg:col-span-1">
+            <div className="bg-white rounded-lg shadow-md overflow-hidden">
+              <div className="p-4 border-b bg-gray-50">
+                <h2 className="text-xl font-bold">Delivery Map</h2>
+                
+                {/* Tracking status */}
+                {isTracking && lastUpdateTime && (
+                  <div className="mt-2 bg-blue-50 p-2 rounded-lg">
+                    <div className="flex items-center text-blue-700 text-sm">
+                      <CheckCircle className="w-4 h-4 mr-1" />
+                      <span>Tracking active - Last update: {lastUpdateTime}</span>
+                    </div>
+                    {currentLocation && (
+                      <p className="text-xs text-blue-600 mt-1">
+                        Current coordinates: {currentLocation.lat.toFixed(6)}, {currentLocation.lng.toFixed(6)}
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+              
+              <div className="p-4">
+                {mapError ? (
+                  <div className="bg-red-50 border-l-4 border-red-400 p-4 mb-4">
+                    <div className="flex">
+                      <div className="flex-shrink-0">
+                        <AlertTriangle className="h-5 w-5 text-red-400" />
+                      </div>
+                      <div className="ml-3">
+                        <p className="text-sm text-red-700">{mapError}</p>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div id="map" className="w-full h-[400px] rounded-lg border border-gray-200"></div>
+                )}
+              </div>
+              
+              {/* Tracking controls */}
+              <div className="p-4 border-t bg-gray-50">
+                <div className="flex flex-wrap gap-2">
+                  {!isTracking ? (
+                    <button
+                      onClick={startTracking}
+                      className="bg-green-500 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-green-600 transition-colors flex items-center gap-1"
+                      disabled={!orderAccepted}
+                    >
+                      <Play className="w-4 h-4" />
+                      Start Tracking
+                    </button>
+                  ) : (
+                    <>
+                      <button
+                        onClick={forceLocationUpdate}
+                        className="bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-600 transition-colors flex items-center gap-1"
+                      >
+                        <MapPin className="w-4 h-4" />
+                        Update Location
+                      </button>
+                      <button
+                        onClick={stopTracking}
+                        className="bg-red-500 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-red-600 transition-colors flex items-center gap-1"
+                      >
+                        <Square className="w-4 h-4" />
+                        Stop Tracking
+                      </button>
+                    </>
                   )}
                 </div>
               </div>

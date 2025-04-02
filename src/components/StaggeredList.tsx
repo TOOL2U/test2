@@ -1,19 +1,16 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { motion } from 'framer-motion';
 
 interface StaggeredListProps {
   children: React.ReactNode[];
   className?: string;
-  itemClassName?: string;
   staggerDelay?: number;
-  threshold?: number;
 }
 
 const StaggeredList: React.FC<StaggeredListProps> = ({
   children,
   className = '',
-  itemClassName = '',
-  staggerDelay = 50,
-  threshold = 0.1
+  staggerDelay = 0.05
 }) => {
   const [isVisible, setIsVisible] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -27,8 +24,8 @@ const StaggeredList: React.FC<StaggeredListProps> = ({
         }
       },
       {
-        threshold,
-        rootMargin: '0px 0px -50px 0px'
+        threshold: 0.1,
+        rootMargin: '0px 0px -100px 0px'
       }
     );
 
@@ -42,7 +39,7 @@ const StaggeredList: React.FC<StaggeredListProps> = ({
         observer.unobserve(currentRef);
       }
     };
-  }, [threshold]);
+  }, []);
 
   // Check for reduced motion preference
   const prefersReducedMotion = 
@@ -50,19 +47,43 @@ const StaggeredList: React.FC<StaggeredListProps> = ({
       ? window.matchMedia('(prefers-reduced-motion: reduce)').matches 
       : false;
 
+  const container = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: {
+        staggerChildren: prefersReducedMotion ? 0 : staggerDelay
+      }
+    }
+  };
+
+  const item = {
+    hidden: prefersReducedMotion ? { opacity: 0 } : { opacity: 0, y: 20 },
+    show: { 
+      opacity: 1, 
+      y: 0,
+      transition: { 
+        type: 'spring',
+        stiffness: 300,
+        damping: 24
+      }
+    }
+  };
+
   return (
-    <div ref={ref} className={className}>
+    <motion.div
+      ref={ref}
+      className={className}
+      variants={container}
+      initial="hidden"
+      animate={isVisible ? "show" : "hidden"}
+    >
       {React.Children.map(children, (child, index) => (
-        <div
-          className={`stagger-item ${isVisible || prefersReducedMotion ? 'animate' : ''} ${itemClassName}`}
-          style={{ 
-            animationDelay: prefersReducedMotion ? '0ms' : `${index * staggerDelay}ms` 
-          }}
-        >
+        <motion.div key={index} variants={item}>
           {child}
-        </div>
+        </motion.div>
       ))}
-    </div>
+    </motion.div>
   );
 };
 

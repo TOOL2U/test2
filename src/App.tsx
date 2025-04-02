@@ -1,4 +1,4 @@
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import HomePage from './pages/HomePage';
 import BasketPage from './pages/BasketPage';
@@ -17,8 +17,12 @@ import DevelopersPage from './pages/DevelopersPage';
 import CategoriesPage from './pages/CategoriesPage';
 import ChatBot from './components/ChatBot';
 import PageTransition from './components/PageTransition';
+import { useAuth } from './context/AuthContext';
 
 function App() {
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'admin';
+
   return (
     <>
       <Navbar />
@@ -32,14 +36,20 @@ function App() {
               <OrdersPage />
             </ProtectedRoute>
           } />
-          <Route path="/track-order" element={<TrackOrderPage />} />
-          <Route path="/driver-tracking" element={<DriverTrackingPage />} />
+          <Route path="/track-order" element={
+            isAdmin ? <TrackOrderPage /> : <Navigate to="/" />
+          } />
+          <Route path="/driver-tracking" element={
+            isAdmin ? <DriverTrackingPage /> : <Navigate to="/" />
+          } />
           <Route path="/staff-tracking" element={<StaffTrackingPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignupPage />} />
           <Route path="/staff-login" element={<StaffLoginPage />} />
           <Route path="/staff-dashboard" element={<StaffDashboardPage />} />
-          <Route path="/back-office" element={<BackOfficePage />} />
+          <Route path="/back-office" element={
+            user?.role === 'admin' ? <BackOfficePage /> : <Navigate to="/" />
+          } />
           <Route path="/developers" element={<DevelopersPage />} />
           <Route path="/categories" element={
             <ProtectedRoute>

@@ -17,6 +17,7 @@ interface ProductGridProps {
   onAddToCart: (product: Product) => void;
   loading?: boolean;
   error?: string | null;
+  brandColor?: string;
 }
 
 const ProductGrid: React.FC<ProductGridProps> = ({
@@ -24,6 +25,7 @@ const ProductGrid: React.FC<ProductGridProps> = ({
   onAddToCart,
   loading = false,
   error = null,
+  brandColor = "#FFF02B"
 }) => {
   // Memoize products to avoid unnecessary re-renders
   const memoizedProducts = useMemo(() => products, [products]);
@@ -36,7 +38,8 @@ const ProductGrid: React.FC<ProductGridProps> = ({
         aria-live="polite"
       >
         <div
-          className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#FFD700]"
+          className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2"
+          style={{ borderColor: brandColor }}
           aria-label="Loading"
         ></div>
       </div>
@@ -72,7 +75,7 @@ const ProductGrid: React.FC<ProductGridProps> = ({
 
   return (
     <StaggeredList
-      className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
+      className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
     >
       {memoizedProducts.map((product) => (
         <ProductCard
@@ -85,6 +88,7 @@ const ProductGrid: React.FC<ProductGridProps> = ({
           price={product.price}
           quantity={product.quantity}
           onAddToCart={() => onAddToCart(product)}
+          brandColor={brandColor}
         />
       ))}
     </StaggeredList>

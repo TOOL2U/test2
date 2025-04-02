@@ -137,7 +137,7 @@ const LoginPage: React.FC = () => {
         backgroundRepeat: 'no-repeat',
       }}
     >
-      <div className="bg-gray-900 bg-opacity-90 p-8 rounded-lg shadow-md max-w-md w-full text-white">
+      <div className="bg-gray-900 bg-opacity-90 p-8 rounded-lg shadow-md max-w-md w-full text-black">
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-[#FFD700]/20 mb-4">
             <LogIn className="h-8 w-8 text-[#FFD700]" />

@@ -14,7 +14,9 @@ import {
   List,
   Search,
   User,
-  Navigation
+  Navigation,
+  Tag,
+  Package
 } from 'lucide-react';
 
 // Define the staff authentication state
@@ -733,89 +735,92 @@ export default function StaffTrackingPage() {
                   )}
                 </div>
                 
-                {/* Map */}
-                <div className="p-4">
-                  <div className="flex justify-between items-center mb-2">
-                    <h3 className="font-medium">Location Tracking</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4">
+                  {/* Order items */}
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <h3 className="font-medium mb-3 flex items-center">
+                      <Package className="w-5 h-5 mr-2 text-blue-600" />
+                      Order Items
+                    </h3>
                     
-                    {/* Refresh Map Button */}
-                    <button
-                      onClick={refreshMap}
-                      className="flex items-center gap-1 bg-blue-100 text-blue-700 px-3 py-1 rounded-lg hover:bg-blue-200 transition-colors"
-                      disabled={isRefreshing}
-                    >
-                      <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-                      Refresh Map
-                    </button>
+                    {(() => {
+                      const order = getOrderById(selectedOrderId);
+                      if (!order) return null;
+                      
+                      return (
+                        <div className="space-y-3">
+                          {order.items.map((item, index) => (
+                            <div key={index} className="bg-white border border-gray-200 rounded-lg p-3 hover:shadow-md transition-shadow">
+                              {/* Product ID Badge */}
+                              <div className="bg-blue-600 text-white text-sm font-bold px-3 py-1 rounded-md flex items-center mb-2 w-fit">
+                                <Tag className="w-4 h-4 mr-1" />
+                                {item.id || `PROD-${index + 1}`}
+                              </div>
+                              
+                              <div className="flex justify-between items-start">
+                                <div>
+                                  <h4 className="font-bold">{item.name}</h4>
+                                  <p className="text-gray-600 text-sm">{item.brand}</p>
+                                </div>
+                                <div className="text-right">
+                                  <div className="font-bold">{item.price} THB</div>
+                                  <div className="text-sm text-gray-600">Qty: {item.quantity}</div>
+                                  {item.days && <div className="text-sm text-gray-600">Days: {item.days}</div>}
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                          
+                          <div className="mt-3 pt-3 border-t border-gray-300">
+                            <div className="flex justify-between text-sm">
+                              <span>Subtotal:</span>
+                              <span>{order.totalAmount} THB</span>
+                            </div>
+                            <div className="flex justify-between text-sm">
+                              <span>Delivery Fee:</span>
+                              <span>{order.deliveryFee} THB</span>
+                            </div>
+                            <div className="flex justify-between font-bold mt-1">
+                              <span>Total:</span>
+                              <span>{order.totalAmount + order.deliveryFee} THB</span>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })()}
                   </div>
                   
-                  {mapError ? (
-                    <div className="bg-red-50 border-l-4 border-red-400 p-4 mb-4">
-                      <div className="flex">
-                        <div className="ml-3">
-                          <p className="text-sm text-red-700">{mapError}</p>
+                  {/* Map */}
+                  <div>
+                    <div className="flex justify-between items-center mb-2">
+                      <h3 className="font-medium flex items-center">
+                        <MapPin className="w-5 h-5 mr-2 text-red-600" />
+                        Location Tracking
+                      </h3>
+                      
+                      {/* Refresh Map Button */}
+                      <button
+                        onClick={refreshMap}
+                        className="flex items-center gap-1 bg-blue-100 text-blue-700 px-3 py-1 rounded-lg hover:bg-blue-200 transition-colors"
+                        disabled={isRefreshing}
+                      >
+                        <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+                        Refresh Map
+                      </button>
+                    </div>
+                    
+                    {mapError ? (
+                      <div className="bg-red-50 border-l-4 border-red-400 p-4 mb-4">
+                        <div className="flex">
+                          <div className="ml-3">
+                            <p className="text-sm text-red-700">{mapError}</p>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ) : (
-                    <div id="staff-map" className="w-full h-[500px] rounded-lg border border-gray-200"></div>
-                  )}
-                </div>
-                
-                {/* Order items */}
-                <div className="p-4 border-t">
-                  <h3 className="font-medium mb-2">Order Items</h3>
-                  {(() => {
-                    const order = getOrderById(selectedOrderId);
-                    if (!order) return null;
-                    
-                    return (
-                      <div className="overflow-x-auto">
-                        <table className="min-w-full divide-y divide-gray-200">
-                          <thead className="bg-gray-50">
-                            <tr>
-                              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Item</th>
-                              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
-                              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quantity</th>
-                              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Days</th>
-                              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
-                            </tr>
-                          </thead>
-                          <tbody className="bg-white divide-y divide-gray-200">
-                            {order.items.map((item, index) => (
-                              <tr key={index}>
-                                <td className="px-4 py-2 whitespace-nowrap text-sm">{item.name}</td>
-                                <td className="px-4 py-2 whitespace-nowrap text-sm">
-                                  {item.id && (
-                                    <span className="bg-blue-100 text-blue-800 text-xs px-2 py-0.5 rounded-full">
-                                      {item.id}
-                                    </span>
-                                  )}
-                                </td>
-                                <td className="px-4 py-2 whitespace-nowrap text-sm">{item.quantity}</td>
-                                <td className="px-4 py-2 whitespace-nowrap text-sm">{item.days || 1}</td>
-                                <td className="px-4 py-2 whitespace-nowrap text-sm">{item.price} THB</td>
-                              </tr>
-                            ))}
-                          </tbody>
-                          <tfoot className="bg-gray-50">
-                            <tr>
-                              <td colSpan={4} className="px-4 py-2 text-sm text-right font-medium">Subtotal:</td>
-                              <td className="px-4 py-2 text-sm">{order.totalAmount} THB</td>
-                            </tr>
-                            <tr>
-                              <td colSpan={4} className="px-4 py-2 text-sm text-right font-medium">Delivery Fee:</td>
-                              <td className="px-4 py-2 text-sm">{order.deliveryFee} THB</td>
-                            </tr>
-                            <tr>
-                              <td colSpan={4} className="px-4 py-2 text-sm text-right font-medium">Total:</td>
-                              <td className="px-4 py-2 text-sm font-bold">{order.totalAmount + order.deliveryFee} THB</td>
-                            </tr>
-                          </tfoot>
-                        </table>
-                      </div>
-                    );
-                  })()}
+                    ) : (
+                      <div id="staff-map" className="w-full h-[300px] rounded-lg border border-gray-200"></div>
+                    )}
+                  </div>
                 </div>
                 
                 {/* Actions */}

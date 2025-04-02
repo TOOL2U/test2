@@ -116,6 +116,55 @@ const BackOfficePage: React.FC = () => {
   const [availableCategories, setAvailableCategories] = useState<string[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>('');
 
+  const [showAddUserModal, setShowAddUserModal] = useState(false);
+  const [newUser, setNewUser] = useState({ name: '', role: '', username: '', password: '' });
+  const [users, setUsers] = useState([]);
+
+  const handleAddUser = () => {
+    if (!newUser.name || !newUser.role || !newUser.username || !newUser.password) {
+      alert('All fields are required to add a new user.');
+      return;
+    }
+  
+    const newUserId = users.length > 0 ? Math.max(...users.map(user => user.id)) + 1 : 1;
+    const updatedUsers = [...users, { id: newUserId, ...newUser }];
+    setUsers(updatedUsers);
+  
+    // Save to localStorage for authentication
+    const storedStaffUsers = JSON.parse(localStorage.getItem('staffUsers') || '[]');
+    storedStaffUsers.push({ id: newUserId, ...newUser });
+    localStorage.setItem('staffUsers', JSON.stringify(storedStaffUsers));
+  
+    setShowAddUserModal(false);
+    setNewUser({ name: '', role: '', username: '', password: '' });
+    alert('New user added successfully!');
+  };
+  
+  const handleDeleteUser = (userId) => {
+    if (window.confirm('Are you sure you want to delete this user?')) {
+      const updatedUsers = users.filter(user => user.id !== userId);
+      setUsers(updatedUsers);
+      alert('User deleted successfully!');
+    }
+  };
+
+  const handleEditUser = (userId: number) => {
+    const userToEdit = users.find(user => user.id === userId);
+    if (userToEdit) {
+      setNewUser({ ...userToEdit });
+      setShowAddUserModal(true);
+    }
+  };
+
+  const loadUsersFromStorage = () => {
+    const storedStaffUsers = JSON.parse(localStorage.getItem('staffUsers') || '[]');
+    setUsers(storedStaffUsers);
+  };
+
+  useEffect(() => {
+    loadUsersFromStorage();
+  }, []);
+
   // Check if user is authenticated and has appropriate role
   useEffect(() => {
     if (!user) {
@@ -203,6 +252,12 @@ const BackOfficePage: React.FC = () => {
 
     fetchDashboardData();
   }, [user, dateRange]);
+
+  // Load staff users from localStorage on component mount
+  useEffect(() => {
+    const storedStaffUsers = JSON.parse(localStorage.getItem('staffUsers') || '[]');
+    setUsers(storedStaffUsers);
+  }, []);
 
   // Handle logout
   const handleLogout = () => {
@@ -1411,11 +1466,14 @@ const BackOfficePage: React.FC = () => {
                         <div className="border rounded-lg p-4">
                           <h4 className="font-medium text-lg mb-2">User Management</h4>
                           <div className="space-y-3">
-                            <button className="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center">
+                            <button
+                              className="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center"
+                              onClick={() => setShowAddUserModal(true)}
+                            >
                               <Plus className="w-5 h-5 mr-1" />
                               Add New User
                             </button>
-                            
+                        
                             <div className="overflow-x-auto">
                               <table className="min-w-full divide-y divide-gray-200">
                                 <thead className="bg-gray-50">
@@ -1432,11 +1490,7 @@ const BackOfficePage: React.FC = () => {
                                   </tr>
                                 </thead>
                                 <tbody className="bg-white divide-y divide-gray-200">
-                                  {[
-                                    { id: 1, name: 'Admin User', role: 'Admin' },
-                                    { id: 2, name: 'Store Manager', role: 'Manager' },
-                                    { id: 3, name: 'Sales Staff', role: 'Staff' }
-                                  ].map(user => (
+                                  {users.map(user => (
                                     <tr key={user.id} className="hover:bg-gray-50">
                                       <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-700">
                                         {user.name}
@@ -1446,10 +1500,16 @@ const BackOfficePage: React.FC = () => {
                                       </td>
                                       <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500">
                                         <div className="flex space-x-2">
-                                          <button className="text-blue-600 hover:text-blue-800">
+                                          <button 
+                                            className="text-blue-600 hover:text-blue-800"
+                                            onClick={() => handleEditUser(user.id)}
+                                          >
                                             Edit
                                           </button>
-                                          <button className="text-red-600 hover:text-red-800">
+                                          <button 
+                                            className="text-red-600 hover:text-red-800"
+                                            onClick={() => handleDeleteUser(user.id)}
+                                          >
                                             Delete
                                           </button>
                                         </div>
@@ -1823,6 +1883,50 @@ const BackOfficePage: React.FC = () => {
                   Save Product
                 </Button>
               </div>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {/* Add New User Modal */}
+      {showAddUserModal && (
+        <Modal onClose={() => setShowAddUserModal(false)}>
+          <div>
+            <h2 className="text-xl font-semibold mb-4">Add New User</h2>
+            <div className="space-y-4">
+              <Input
+                label="Name"
+                value={newUser.name}
+                onChange={(e) => setNewUser({ ...newUser, name: e.target.value })}
+                fullWidth
+              />
+              <Input
+                label="Role"
+                value={newUser.role}
+                onChange={(e) => setNewUser({ ...newUser, role: e.target.value })}
+                fullWidth
+              />
+              <Input
+                label="Username"
+                value={newUser.username}
+                onChange={(e) => setNewUser({ ...newUser, username: e.target.value })}
+                fullWidth
+              />
+              <Input
+                label="Password"
+                type="password"
+                value={newUser.password}
+                onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
+                fullWidth
+              />
+            </div>
+            <div className="flex justify-end space-x-2 mt-4">
+              <Button variant="secondary" onClick={() => setShowAddUserModal(false)}>
+                Cancel
+              </Button>
+              <Button variant="primary" onClick={handleAddUser}>
+                Add User
+              </Button>
             </div>
           </div>
         </Modal>

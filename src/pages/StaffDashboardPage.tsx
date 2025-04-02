@@ -1,12 +1,33 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useOrders } from '../context/OrderContext';
+import { useAuth } from '../context/AuthContext';
 import NotificationTester from '../components/NotificationTester';
 import { ArrowLeft, Truck, Bell, MapPin, Settings, Users, Package, Clock, CheckCircle, AlertCircle } from 'lucide-react';
 
 export default function StaffDashboardPage() {
   const { orders, updateOrderStatus } = useOrders();
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('orders');
+  const [activeTabs, setActiveTabs] = useState<string[]>([]);
+
+  // Determine if user has management privileges
+  const isManagement = user?.role === 'owner' || user?.role === 'admin';
+  
+  // Set active tab to 'orders' for staff users on component mount
+  useEffect(() => {
+    if (!isManagement && activeTab !== 'orders') {
+      setActiveTab('orders');
+    }
+  }, [isManagement, activeTab]);
+
+  useEffect(() => {
+    if (user?.role === 'admin' || user?.role === 'owner') {
+      setActiveTabs(['dashboard', 'orders', 'products', 'customers', 'settings', 'driver-tracking', 'back-office']);
+    } else if (user?.role === 'staff') {
+      setActiveTabs(['dashboard', 'orders', 'products']);
+    }
+  }, [user]);
 
   // Filter orders based on status
   const pendingOrders = orders.filter(order => order.status === 'pending');
@@ -25,9 +46,18 @@ export default function StaffDashboardPage() {
             Back to Home
           </Link>
           <h1 className="text-2xl font-bold">Staff Dashboard</h1>
+          
+          {/* User role indicator */}
+          {user && (
+            <div className={`px-3 py-1 rounded-full text-sm font-medium ${
+              isManagement ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'
+            }`}>
+              {user.role || 'staff'}
+            </div>
+          )}
         </div>
         
-        {/* Tabs */}
+        {/* Tabs - Only show all tabs for management roles */}
         <div className="border-b border-gray-200 mb-6">
           <nav className="flex space-x-8">
             <button
@@ -41,39 +71,45 @@ export default function StaffDashboardPage() {
               <Package className="w-5 h-5 inline mr-2" />
               Orders
             </button>
-            <button
-              onClick={() => setActiveTab('tracking')}
-              className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                activeTab === 'tracking'
-                  ? 'border-[#FFD700] text-gray-900'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              <Truck className="w-5 h-5 inline mr-2" />
-              Driver Tracking
-            </button>
-            <button
-              onClick={() => setActiveTab('notifications')}
-              className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                activeTab === 'notifications'
-                  ? 'border-[#FFD700] text-gray-900'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              <Bell className="w-5 h-5 inline mr-2" />
-              Notifications
-            </button>
-            <button
-              onClick={() => setActiveTab('settings')}
-              className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                activeTab === 'settings'
-                  ? 'border-[#FFD700] text-gray-900'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              <Settings className="w-5 h-5 inline mr-2" />
-              Settings
-            </button>
+            
+            {/* Only show these tabs for management roles */}
+            {isManagement && (
+              <>
+                <button
+                  onClick={() => setActiveTab('tracking')}
+                  className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                    activeTab === 'tracking'
+                      ? 'border-[#FFD700] text-gray-900'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+                >
+                  <Truck className="w-5 h-5 inline mr-2" />
+                  Driver Tracking
+                </button>
+                <button
+                  onClick={() => setActiveTab('notifications')}
+                  className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                    activeTab === 'notifications'
+                      ? 'border-[#FFD700] text-gray-900'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+                >
+                  <Bell className="w-5 h-5 inline mr-2" />
+                  Notifications
+                </button>
+                <button
+                  onClick={() => setActiveTab('settings')}
+                  className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                    activeTab === 'settings'
+                      ? 'border-[#FFD700] text-gray-900'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+                >
+                  <Settings className="w-5 h-5 inline mr-2" />
+                  Settings
+                </button>
+              </>
+            )}
           </nav>
         </div>
         
@@ -192,12 +228,14 @@ export default function StaffDashboardPage() {
                                   >
                                     Track
                                   </Link>
-                                  <Link
-                                    to={`/staff-tracking`}
-                                    className="text-green-600 hover:text-green-900"
-                                  >
-                                    Manage
-                                  </Link>
+                                  {isManagement && (
+                                    <Link
+                                      to={`/staff-tracking`}
+                                      className="text-green-600 hover:text-green-900"
+                                    >
+                                      Manage
+                                    </Link>
+                                  )}
                                 </div>
                               </td>
                             </tr>
@@ -268,7 +306,8 @@ export default function StaffDashboardPage() {
               </div>
             )}
             
-            {activeTab === 'tracking' && (
+            {/* Only render these tabs for management roles */}
+            {isManagement && activeTab === 'tracking' && (
               <div className="bg-white rounded-lg shadow-md overflow-hidden">
                 <div className="p-4 border-b">
                   <h2 className="text-xl font-bold">Driver Tracking</h2>
@@ -306,7 +345,7 @@ export default function StaffDashboardPage() {
               </div>
             )}
             
-            {activeTab === 'notifications' && (
+            {isManagement && activeTab === 'notifications' && (
               <div className="bg-white rounded-lg shadow-md overflow-hidden">
                 <div className="p-4 border-b">
                   <h2 className="text-xl font-bold">Notification System</h2>
@@ -334,7 +373,7 @@ export default function StaffDashboardPage() {
               </div>
             )}
             
-            {activeTab === 'settings' && (
+            {isManagement && activeTab === 'settings' && (
               <div className="bg-white rounded-lg shadow-md overflow-hidden">
                 <div className="p-4 border-b">
                   <h2 className="text-xl font-bold">System Settings</h2>
@@ -407,7 +446,7 @@ export default function StaffDashboardPage() {
           
           {/* Sidebar */}
           <div className="lg:col-span-1">
-            {/* Order Statistics */}
+            {/* Order Statistics - Always visible for all roles */}
             <div className="bg-white rounded-lg shadow-md overflow-hidden mb-6">
               <div className="p-4 border-b">
                 <h2 className="font-bold">Order Statistics</h2>
@@ -438,93 +477,144 @@ export default function StaffDashboardPage() {
               </div>
             </div>
             
-            {/* Quick Actions */}
-            <div className="bg-white rounded-lg shadow-md overflow-hidden mb-6">
-              <div className="p-4 border-b">
-                <h2 className="font-bold">Quick Actions</h2>
+            {/* Quick Actions - Only for management roles */}
+            {isManagement && (
+              <div className="bg-white rounded-lg shadow-md overflow-hidden mb-6">
+                <div className="p-4 border-b">
+                  <h2 className="font-bold">Quick Actions</h2>
+                </div>
+                
+                <div className="p-4">
+                  <ul className="space-y-2">
+                    <li>
+                      <Link
+                        to="/staff-tracking"
+                        className="flex items-center p-2 rounded-lg hover:bg-gray-50"
+                      >
+                        <MapPin className="w-5 h-5 mr-3 text-blue-500" />
+                        <span>Track All Drivers</span>
+                      </Link>
+                    </li>
+                    <li>
+                      <Link
+                        to={`/driver-tracking?order_id=${activeOrders[0]?.id || pendingOrders[0]?.id || 'ORD-12345'}&code=DRIVER123`}
+                        className="flex items-center p-2 rounded-lg hover:bg-gray-50"
+                      >
+                        <Truck className="w-5 h-5 mr-3 text-green-500" />
+                        <span>Driver View</span>
+                      </Link>
+                    </li>
+                    <li>
+                      <button
+                        onClick={() => setActiveTab('notifications')}
+                        className="flex items-center p-2 rounded-lg hover:bg-gray-50 w-full text-left"
+                      >
+                        <Bell className="w-5 h-5 mr-3 text-yellow-500" />
+                        <span>Test Notifications</span>
+                      </button>
+                    </li>
+                    <li>
+                      <Link
+                        to="/orders"
+                        className="flex items-center p-2 rounded-lg hover:bg-gray-50"
+                      >
+                        <Package className="w-5 h-5 mr-3 text-purple-500" />
+                        <span>View All Orders</span>
+                      </Link>
+                    </li>
+                    {isManagement && (
+                      <li>
+                        <Link
+                          to="/back-office"
+                          className="flex items-center p-2 rounded-lg hover:bg-gray-50"
+                        >
+                          <Settings className="w-5 h-5 mr-3 text-purple-500" />
+                          <span>Back Office</span>
+                        </Link>
+                      </li>
+                    )}
+                  </ul>
+                </div>
               </div>
-              
-              <div className="p-4">
-                <ul className="space-y-2">
-                  <li>
-                    <Link
-                      to="/staff-tracking"
-                      className="flex items-center p-2 rounded-lg hover:bg-gray-50"
-                    >
-                      <MapPin className="w-5 h-5 mr-3 text-blue-500" />
-                      <span>Track All Drivers</span>
-                    </Link>
-                  </li>
-                  <li>
+            )}
+            
+            {/* System Status - Only for management roles */}
+            {isManagement && (
+              <div className="bg-white rounded-lg shadow-md overflow-hidden">
+                <div className="p-4 border-b">
+                  <h2 className="font-bold">System Status</h2>
+                </div>
+                
+                <div className="p-4">
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-gray-600">Notification System</span>
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                        <CheckCircle className="w-3 h-3 mr-1" />
+                        Active
+                      </span>
+                    </div>
+                    
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-gray-600">Make.com Webhook</span>
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                        <CheckCircle className="w-3 h-3 mr-1" />
+                        Connected
+                      </span>
+                    </div>
+                    
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-gray-600">Active Drivers</span>
+                      <span className="text-sm font-medium">{activeOrders.length}</span>
+                    </div>
+                    
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-gray-600">Pending Orders</span>
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                        <AlertCircle className="w-3 h-3 mr-1" />
+                        {pendingOrders.length} Require Attention
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            {/* For staff users, show a help section instead of quick actions and system status */}
+            {!isManagement && (
+              <div className="bg-white rounded-lg shadow-md overflow-hidden">
+                <div className="p-4 border-b">
+                  <h2 className="font-bold">Help & Resources</h2>
+                </div>
+                
+                <div className="p-4">
+                  <div className="bg-blue-50 p-4 rounded-lg mb-4">
+                    <h3 className="font-medium mb-2">Need assistance?</h3>
+                    <p className="text-sm text-gray-600">
+                      If you need help with an order or have questions, please contact your supervisor.
+                    </p>
+                  </div>
+                  
+                  <div className="space-y-3">
                     <Link
                       to={`/driver-tracking?order_id=${activeOrders[0]?.id || pendingOrders[0]?.id || 'ORD-12345'}&code=DRIVER123`}
                       className="flex items-center p-2 rounded-lg hover:bg-gray-50"
                     >
                       <Truck className="w-5 h-5 mr-3 text-green-500" />
-                      <span>Driver View</span>
+                      <span>Open Driver View</span>
                     </Link>
-                  </li>
-                  <li>
-                    <button
-                      onClick={() => setActiveTab('notifications')}
-                      className="flex items-center p-2 rounded-lg hover:bg-gray-50 w-full text-left"
-                    >
-                      <Bell className="w-5 h-5 mr-3 text-yellow-500" />
-                      <span>Test Notifications</span>
-                    </button>
-                  </li>
-                  <li>
+                    
                     <Link
-                      to="/orders"
+                      to="/"
                       className="flex items-center p-2 rounded-lg hover:bg-gray-50"
                     >
-                      <Package className="w-5 h-5 mr-3 text-purple-500" />
-                      <span>View All Orders</span>
+                      <ArrowLeft className="w-5 h-5 mr-3 text-gray-500" />
+                      <span>Return to Home</span>
                     </Link>
-                  </li>
-                </ul>
-              </div>
-            </div>
-            
-            {/* System Status */}
-            <div className="bg-white rounded-lg shadow-md overflow-hidden">
-              <div className="p-4 border-b">
-                <h2 className="font-bold">System Status</h2>
-              </div>
-              
-              <div className="p-4">
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600">Notification System</span>
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                      <CheckCircle className="w-3 h-3 mr-1" />
-                      Active
-                    </span>
-                  </div>
-                  
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600">Make.com Webhook</span>
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                      <CheckCircle className="w-3 h-3 mr-1" />
-                      Connected
-                    </span>
-                  </div>
-                  
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600">Active Drivers</span>
-                    <span className="text-sm font-medium">{activeOrders.length}</span>
-                  </div>
-                  
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600">Pending Orders</span>
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                      <AlertCircle className="w-3 h-3 mr-1" />
-                      {pendingOrders.length} Require Attention
-                    </span>
                   </div>
                 </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
       </div>
