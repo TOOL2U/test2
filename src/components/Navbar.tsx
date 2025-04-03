@@ -3,7 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useOrders } from '../context/OrderContext';
 import { useAuth } from '../context/AuthContext';
-import { ShoppingCart, Menu, X, Package, Code, LogIn, LogOut, Wrench, Phone } from 'lucide-react';
+import { ShoppingCart, Menu, X, Package, Code, LogIn, LogOut, Wrench, Phone, LayoutDashboard } from 'lucide-react';
 import { Logo } from './Logo';
 import Button from './Button';
 
@@ -64,6 +64,15 @@ const Navbar: React.FC = () => {
             <Link to="/developers" className="text-white hover:text-[#FFD700] transition-colors flex items-center relative group">
               <Code className="w-4 h-4 mr-1" />
               Developers
+              <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-[#FFD700] transition-all duration-300 group-hover:w-full"></span>
+            </Link>
+          )}
+          
+          {/* Staff Dashboard link for admin users */}
+          {isAdmin && (
+            <Link to="/staff-dashboard" className="text-white hover:text-[#FFD700] transition-colors flex items-center relative group">
+              <LayoutDashboard className="w-4 h-4 mr-1" />
+              Staff Dashboard
               <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-[#FFD700] transition-all duration-300 group-hover:w-full"></span>
             </Link>
           )}
@@ -172,6 +181,15 @@ const Navbar: React.FC = () => {
                 <Link to="/developers" className="text-white hover:text-[#FFD700] transition-colors py-2 flex items-center">
                   <Code className="w-4 h-4 mr-2" />
                   Developers
+                  <span className="ml-auto text-gray-400">→</span>
+                </Link>
+              )}
+              
+              {/* Staff Dashboard link for admin users in mobile menu */}
+              {isAdmin && (
+                <Link to="/staff-dashboard" className="text-white hover:text-[#FFD700] transition-colors py-2 flex items-center">
+                  <LayoutDashboard className="w-4 h-4 mr-2" />
+                  Staff Dashboard
                   <span className="ml-auto text-gray-400">→</span>
                 </Link>
               )}
