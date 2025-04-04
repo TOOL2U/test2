@@ -435,6 +435,9 @@ export default function DriverTrackingPage() {
     );
   }
   
+  // Check if order is in payment verification status - don't allow driver to accept
+  const isPaymentVerificationPending = order.status === 'payment_verification';
+  
   return (
     <div className="pt-20">
       <div className="container mx-auto px-6 py-8">
@@ -459,9 +462,10 @@ export default function DriverTrackingPage() {
             <div className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
               order.status === 'delivered' ? 'bg-green-100 text-green-800' :
               order.status === 'on our way' ? 'bg-blue-100 text-blue-800' :
+              order.status === 'payment_verification' ? 'bg-orange-100 text-orange-800' :
               'bg-yellow-100 text-yellow-800'
             }`}>
-              {order.status}
+              {order.status === 'payment_verification' ? 'Payment Verification' : order.status}
             </div>
           </div>
         </div>
@@ -491,9 +495,22 @@ export default function DriverTrackingPage() {
                   <p className="text-gray-700 mb-3"><strong>Address:</strong> {order.deliveryAddress}</p>
                 </div>
                 
+                {/* Payment Verification Warning */}
+                {isPaymentVerificationPending && (
+                  <div className="bg-orange-50 p-4 rounded-lg border border-orange-200 mb-4">
+                    <div className="flex items-center mb-2">
+                      <AlertTriangle className="w-5 h-5 text-orange-600 mr-2" />
+                      <h3 className="font-bold text-orange-800">Payment Verification Required</h3>
+                    </div>
+                    <p className="text-orange-700">
+                      This order is awaiting payment verification by an administrator. You cannot accept this order until payment has been verified.
+                    </p>
+                  </div>
+                )}
+                
                 {/* Order Status Actions */}
                 <div className="flex flex-col gap-2">
-                  {!orderAccepted ? (
+                  {!orderAccepted && !isPaymentVerificationPending ? (
                     <button
                       onClick={acceptOrder}
                       className="w-full bg-blue-500 text-white px-4 py-3 rounded-lg font-medium hover:bg-blue-600 transition-colors flex items-center justify-center gap-2"
@@ -501,7 +518,7 @@ export default function DriverTrackingPage() {
                       <Truck className="w-5 h-5" />
                       Accept Order & Start Delivery
                     </button>
-                  ) : order.status !== 'delivered' && (
+                  ) : order.status !== 'delivered' && !isPaymentVerificationPending && (
                     <button
                       onClick={markAsDelivered}
                       className="w-full bg-green-500 text-white px-4 py-3 rounded-lg font-medium hover:bg-green-600 transition-colors flex items-center justify-center gap-2"
@@ -665,14 +682,14 @@ export default function DriverTrackingPage() {
                 )}
               </div>
               
-              {/* Tracking controls */}
+              {/* Tracking controls - disabled if payment verification is pending */}
               <div className="p-4 border-t bg-gray-50">
                 <div className="flex flex-wrap gap-2">
                   {!isTracking ? (
                     <button
                       onClick={startTracking}
                       className="bg-green-500 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-green-600 transition-colors flex items-center gap-1"
-                      disabled={!orderAccepted}
+                      disabled={!orderAccepted || isPaymentVerificationPending}
                     >
                       <Play className="w-4 h-4" />
                       Start Tracking

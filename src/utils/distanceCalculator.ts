@@ -1,12 +1,9 @@
 /**
- * Utility functions for calculating distance and delivery fees
+ * Utility for calculating distances between coordinates
  */
 
-// Business location (Koh Samui)
-const BUSINESS_LOCATION = { lat: 9.751085, lng: 99.975936 };
-
 /**
- * Calculate the distance between two points using the Haversine formula
+ * Calculate distance between two points using the Haversine formula
  * @param lat1 Latitude of first point
  * @param lon1 Longitude of first point
  * @param lat2 Latitude of second point
@@ -14,22 +11,15 @@ const BUSINESS_LOCATION = { lat: 9.751085, lng: 99.975936 };
  * @returns Distance in kilometers
  */
 export function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
-  // Radius of the Earth in kilometers
-  const R = 6371;
-  
-  // Convert latitude and longitude from degrees to radians
+  const R = 6371; // Radius of the earth in km
   const dLat = deg2rad(lat2 - lat1);
   const dLon = deg2rad(lon2 - lon1);
-  
-  // Haversine formula
-  const a = 
-    Math.sin(dLat/2) * Math.sin(dLat/2) +
-    Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) * 
-    Math.sin(dLon/2) * Math.sin(dLon/2);
-  
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-  const distance = R * c; // Distance in kilometers
-  
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  const distance = R * c; // Distance in km
   return distance;
 }
 
@@ -39,7 +29,21 @@ export function calculateDistance(lat1: number, lon1: number, lat2: number, lon2
  * @returns Radians
  */
 function deg2rad(deg: number): number {
-  return deg * (Math.PI/180);
+  return deg * (Math.PI / 180);
+}
+
+/**
+ * Calculate distance from business location to customer
+ * @param customerLat Customer latitude
+ * @param customerLon Customer longitude
+ * @returns Distance in kilometers
+ */
+export function calculateDistanceFromBusiness(customerLat: number, customerLon: number): number {
+  // Business location (Koh Samui, Thailand)
+  const businessLat = 9.751085;
+  const businessLon = 99.975936;
+  
+  return calculateDistance(businessLat, businessLon, customerLat, customerLon);
 }
 
 /**
@@ -48,27 +52,53 @@ function deg2rad(deg: number): number {
  * @returns Delivery fee in THB
  */
 export function calculateDeliveryFee(distance: number): number {
-  // Define delivery fee tiers
-  if (distance <= 5) return 50;      // 0-5 km = 50 THB
-  if (distance <= 10) return 100;    // 5-10 km = 100 THB
-  if (distance <= 15) return 150;    // 10-15 km = 150 THB
-  if (distance <= 20) return 200;    // 15-20 km = 200 THB
-  if (distance <= 30) return 300;    // 20-30 km = 300 THB
-  if (distance <= 50) return 500;    // 30-50 km = 500 THB
-  return 800;                        // Over 50 km = 800 THB
+  // Base fee
+  let fee = 50;
+  
+  // Add 10 THB per km after first 5km
+  if (distance > 5) {
+    fee += Math.ceil(distance - 5) * 10;
+  }
+  
+  // Cap at 200 THB
+  return Math.min(fee, 200);
 }
 
 /**
- * Calculate distance from business location
- * @param lat Customer latitude
- * @param lng Customer longitude
- * @returns Distance in kilometers
+ * Calculate estimated delivery time based on distance
+ * @param distance Distance in kilometers
+ * @returns Estimated delivery time in minutes
  */
-export function calculateDistanceFromBusiness(lat: number, lng: number): number {
-  return calculateDistance(
-    BUSINESS_LOCATION.lat,
-    BUSINESS_LOCATION.lng,
-    lat,
-    lng
-  );
+export function calculateEstimatedDeliveryTime(distance: number): number {
+  // Base time: 15 minutes preparation
+  const baseTime = 15;
+  
+  // Add 2 minutes per km
+  const travelTime = Math.ceil(distance) * 2;
+  
+  // Add buffer time based on distance
+  let bufferTime = 5;
+  if (distance > 10) {
+    bufferTime = 10;
+  } else if (distance > 20) {
+    bufferTime = 15;
+  }
+  
+  return baseTime + travelTime + bufferTime;
+}
+
+/**
+ * Format distance for display
+ * @param distance Distance in kilometers
+ * @returns Formatted distance string
+ */
+export function formatDistance(distance: number): string {
+  if (distance < 1) {
+    // Convert to meters for small distances
+    const meters = Math.round(distance * 1000);
+    return `${meters} m`;
+  }
+  
+  // Round to 1 decimal place for larger distances
+  return `${distance.toFixed(1)} km`;
 }

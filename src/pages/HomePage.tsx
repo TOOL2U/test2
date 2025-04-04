@@ -5,6 +5,7 @@ import { Logo } from '../components/Logo';
 import AnimateOnScroll from '../components/AnimateOnScroll';
 import StaggeredList from '../components/StaggeredList';
 import Button from '../components/Button';
+import Breadcrumbs from '../components/Breadcrumbs';
 
 function FAQItem({ question, answer }: { question: string; answer: string }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -54,30 +55,6 @@ function ProcessStep({ number, title, description }: { number: number, title: st
   );
 }
 
-function PricingCard({ title, price, features }: { title: string, price: string, features: string[] }) {
-  return (
-    <div className="bg-white rounded-lg shadow-xl p-8 hover:shadow-2xl transition-shadow duration-250 hover:translate-y-[-5px] transform transition-transform">
-      <h3 className="text-2xl font-bold mb-4">{title}</h3>
-      <p className="text-4xl font-bold mb-6">{price}</p>
-      <ul className="space-y-3">
-        {features.map((feature, index) => (
-          <li key={index} className="flex items-center">
-            <CheckCircle className="w-5 h-5 text-[#FFD700] mr-2" />
-            {feature}
-          </li>
-        ))}
-      </ul>
-      <Button
-        variant="primary"
-        size="lg"
-        className="mt-8 w-full"
-      >
-        Choose Plan
-      </Button>
-    </div>
-  );
-}
-
 function TestimonialCard({ name, role, quote, image }: { name: string; role: string; quote: string; image: string }) {
   return (
     <div className="bg-white p-6 rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-250">
@@ -97,6 +74,8 @@ function TestimonialCard({ name, role, quote, image }: { name: string; role: str
 import { CSSTransition } from 'react-transition-group';
 
 const HomePage = () => {
+  const [scrollY, setScrollY] = useState(0);
+
   useEffect(() => {
     const handleScroll = () => {
       setScrollY(window.scrollY);
@@ -243,50 +222,6 @@ const HomePage = () => {
         </div>
       </section>
 
-      {/* Pricing Section */}
-      <section className="py-20 bg-white" id="pricing">
-        <div className="container mx-auto px-6">
-          <AnimateOnScroll>
-            <h2 className="text-4xl font-bold text-center mb-16">Simple, Transparent Pricing</h2>
-          </AnimateOnScroll>
-          <StaggeredList className="grid md:grid-cols-3 gap-8">
-            <PricingCard
-              title="Daily Rental"
-              price="From $29/day"
-              features={[
-                "24-hour rental period",
-                "Free delivery & pickup",
-                "Basic insurance included",
-                "24/7 support"
-              ]}
-            />
-            <PricingCard
-              title="Weekly Rental"
-              price="From $149/week"
-              features={[
-                "7-day rental period",
-                "Free delivery & pickup",
-                "Extended insurance",
-                "Priority support",
-                "20% bulk discount"
-              ]}
-            />
-            <PricingCard
-              title="Monthly Rental"
-              price="From $499/month"
-              features={[
-                "30-day rental period",
-                "Free delivery & pickup",
-                "Premium insurance",
-                "Dedicated support",
-                "30% bulk discount",
-                "Flexible return dates"
-              ]}
-            />
-          </StaggeredList>
-        </div>
-      </section>
-
       {/* FAQ Section */}
       <section className="py-20 bg-gray-100">
         <div className="container mx-auto px-6">
@@ -362,35 +297,6 @@ const HomePage = () => {
           </AnimateOnScroll>
         </div>
       </section>
-
-      {/* Footer */}
-      <footer className="bg-gray-900 text-white py-12">
-        <div className="container mx-auto px-6">
-          <div className="text-center">
-            <Logo variant="light" className="mx-auto mb-6" />
-            <p className="opacity-75">Professional tools delivered to your doorstep</p>
-            <div className="mt-6">
-              <a 
-                href="https://www.facebook.com/profile.php?id=61574673543654" 
-                target="_blank" 
-                rel="noopener noreferrer" 
-                className="text-[#FFD700] hover:underline"
-              >
-                Follow us on Facebook
-              </a>
-            </div>
-            <div className="mt-6">
-              <p className="opacity-75">© 2024 Tool2U. All rights reserved.</p>
-            </div>
-            <div className="mt-6 text-sm">
-              <p>Contact Us:</p>
-              <p>Phone: <a href="tel:+66933880630" className="text-[#FFD700] hover:underline">+66 933 880 630</a></p>
-              <p>Email: <a href="mailto:support@tool2u.com" className="text-[#FFD700] hover:underline">support@tool2u.com</a></p>
-              <p>Address: 123 Tool Street, Bangkok, Thailand</p>
-            </div>
-          </div>
-        </div>
-      </footer>
     </>
   );
 };

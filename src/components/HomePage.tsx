@@ -61,26 +61,6 @@ function ToolCategory({ icon: Icon, name, image }: { icon: any, name: string, im
   );
 }
 
-function PricingCard({ title, price, features }: { title: string, price: string, features: string[] }) {
-  return (
-    <div className="bg-white rounded-lg shadow-xl p-8">
-      <h3 className="text-2xl font-bold mb-4">{title}</h3>
-      <p className="text-4xl font-bold mb-6">{price}</p>
-      <ul className="space-y-3">
-        {features.map((feature, index) => (
-          <li key={index} className="flex items-center">
-            <CheckCircle className="w-5 h-5 text-[#FFD700] mr-2" />
-            {feature}
-          </li>
-        ))}
-      </ul>
-      <button className="w-full mt-8 bg-[#FFD700] text-gray-900 px-6 py-3 rounded-lg font-bold hover:bg-[#FFE44D] transition-colors">
-        Choose Plan
-      </button>
-    </div>
-  );
-}
-
 function TestimonialCard({ name, role, quote, image }: { name: string; role: string; quote: string; image: string }) {
   return (
     <div className="bg-white p-6 rounded-lg shadow-lg">
@@ -253,48 +233,6 @@ export function HomePage() {
         </div>
       </section>
 
-      {/* Pricing Section */}
-      <section className="py-20 bg-white" id="pricing">
-        <div className="container mx-auto px-6">
-          <h2 className="text-4xl font-bold text-center mb-16">Simple, Transparent Pricing</h2>
-          <div className="grid md:grid-cols-3 gap-8">
-            <PricingCard
-              title="Daily Rental"
-              price="From $29/day"
-              features={[
-                "24-hour rental period",
-                "Free delivery & pickup",
-                "Basic insurance included",
-                "24/7 support"
-              ]}
-            />
-            <PricingCard
-              title="Weekly Rental"
-              price="From $149/week"
-              features={[
-                "7-day rental period",
-                "Free delivery & pickup",
-                "Extended insurance",
-                "Priority support",
-                "20% bulk discount"
-              ]}
-            />
-            <PricingCard
-              title="Monthly Rental"
-              price="From $499/month"
-              features={[
-                "30-day rental period",
-                "Free delivery & pickup",
-                "Premium insurance",
-                "Dedicated support",
-                "30% bulk discount",
-                "Flexible return dates"
-              ]}
-            />
-          </div>
-        </div>
-      </section>
-
       {/* FAQ Section */}
       <section className="py-20 bg-gray-100">
         <div className="container mx-auto px-6">
@@ -362,14 +300,15 @@ export function HomePage() {
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="bg-gray-900 text-white py-12">
+      {/* Footer - Updated to be smaller with centered, larger logo */}
+      <footer className="bg-gray-900 text-white py-8">
         <div className="container mx-auto px-6">
           <div className="text-center">
-            <Logo variant="light" className="mx-auto mb-6" />
-            <p className="opacity-75">Professional tools delivered to your doorstep</p>
-            <div className="mt-6">
-              <p className="opacity-75">© 2024 Tool2U. All rights reserved.</p>
+            <Logo variant="light" className="mx-auto mb-4" size="large" />
+            <p className="opacity-75 text-sm">© 2024 Tool2U. All rights reserved.</p>
+            <div className="mt-2 text-xs">
+              <a href="tel:+66933880630" className="text-[#FFD700] hover:underline">+66 933 880 630</a> | 
+              <a href="mailto:support@tool2u.com" className="text-[#FFD700] hover:underline ml-2">support@tool2u.com</a>
             </div>
           </div>
         </div>
