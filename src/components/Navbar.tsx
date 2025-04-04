@@ -58,11 +58,16 @@ const Navbar: React.FC = () => {
             Tools
             <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-[#FFD700] transition-all duration-300 group-hover:w-full"></span>
           </Link>
-          <Link to="/developers" className="text-white hover:text-[#FFD700] transition-colors flex items-center relative group">
-            <Code className="w-4 h-4 mr-1" />
-            Developers
-            <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-[#FFD700] transition-all duration-300 group-hover:w-full"></span>
-          </Link>
+          
+          {/* Only show Developers link for admin users */}
+          {isAdmin && (
+            <Link to="/developers" className="text-white hover:text-[#FFD700] transition-colors flex items-center relative group">
+              <Code className="w-4 h-4 mr-1" />
+              Developers
+              <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-[#FFD700] transition-all duration-300 group-hover:w-full"></span>
+            </Link>
+          )}
+          
           {isAdmin && (
             <Link to="/back-office" className="text-white hover:text-[#FFD700] transition-colors flex items-center relative group">
               <Package className="w-4 h-4 mr-1" />
@@ -161,11 +166,16 @@ const Navbar: React.FC = () => {
                 Tools
                 <span className="ml-auto text-gray-400">→</span>
               </Link>
-              <Link to="/developers" className="text-white hover:text-[#FFD700] transition-colors py-2 flex items-center">
-                <Code className="w-4 h-4 mr-2" />
-                Developers
-                <span className="ml-auto text-gray-400">→</span>
-              </Link>
+              
+              {/* Only show Developers link for admin users in mobile menu */}
+              {isAdmin && (
+                <Link to="/developers" className="text-white hover:text-[#FFD700] transition-colors py-2 flex items-center">
+                  <Code className="w-4 h-4 mr-2" />
+                  Developers
+                  <span className="ml-auto text-gray-400">→</span>
+                </Link>
+              )}
+              
               {isAdmin && (
                 <Link to="/back-office" className="text-white hover:text-[#FFD700] transition-colors py-2 flex items-center">
                   <Package className="w-4 h-4 mr-2" />

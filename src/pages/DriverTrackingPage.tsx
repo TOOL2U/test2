@@ -16,7 +16,8 @@ import {
   Clock,
   Tag,
   Truck,
-  Check
+  Check,
+  Wallet
 } from 'lucide-react';
 
 export default function DriverTrackingPage() {
@@ -607,6 +608,13 @@ export default function DriverTrackingPage() {
                           {item.days && <div className="text-sm text-gray-600">Days: {item.days}</div>}
                         </div>
                       </div>
+                      
+                      {/* Display deposit for each item if available */}
+                      {item.deposit && (
+                        <div className="mt-2 text-sm text-amber-700 bg-amber-50 p-2 rounded">
+                          <span className="font-medium">Deposit:</span> {item.deposit.toFixed(2)} THB per unit
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -615,21 +623,39 @@ export default function DriverTrackingPage() {
                 <div className="mt-6 pt-4 border-t border-gray-200">
                   <div className="flex justify-between text-sm mb-1">
                     <span className="text-gray-600">Subtotal:</span>
-                    <span className="font-medium">{order.totalAmount} THB</span>
+                    <span className="font-medium">{order.totalAmount.toFixed(2)} THB</span>
                   </div>
                   <div className="flex justify-between text-sm mb-1">
                     <span className="text-gray-600">Delivery Fee:</span>
-                    <span className="font-medium">{order.deliveryFee} THB</span>
+                    <span className="font-medium">{order.deliveryFee.toFixed(2)} THB</span>
                   </div>
+                  
+                  {/* Display deposit amount if available */}
+                  {order.depositAmount > 0 && (
+                    <div className="flex justify-between text-sm mb-1 text-amber-700">
+                      <span className="font-medium">Deposit (Refundable):</span>
+                      <span className="font-medium">{order.depositAmount.toFixed(2)} THB</span>
+                    </div>
+                  )}
+                  
                   <div className="flex justify-between text-lg mt-2 pt-2 border-t border-gray-200">
                     <span className="font-bold">Total:</span>
-                    <span className="font-bold">{order.totalAmount + order.deliveryFee} THB</span>
+                    <span className="font-bold">{(order.totalAmount + order.deliveryFee + (order.depositAmount || 0)).toFixed(2)} THB</span>
                   </div>
                   
                   <div className="mt-4 bg-gray-50 p-3 rounded-lg">
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-600">Payment Method:</span>
-                      <span className="font-medium">{order.paymentMethod}</span>
+                      <span className="font-medium flex items-center">
+                        {order.paymentMethod === 'cod' ? (
+                          <>
+                            <Wallet className="w-4 h-4 mr-1 text-green-600" />
+                            Cash on Delivery
+                          </>
+                        ) : (
+                          order.paymentMethod
+                        )}
+                      </span>
                     </div>
                     {order.distance && (
                       <div className="flex justify-between text-sm mt-1">

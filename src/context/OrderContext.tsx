@@ -38,6 +38,7 @@ export interface OrderItem {
   quantity: number;
   days?: number;
   image?: string;
+  deposit?: number;
 }
 
 export interface CustomerInfo {
@@ -55,6 +56,7 @@ export interface Order {
   gpsCoordinates?: GpsCoordinates;
   distance?: number;
   deliveryFee: number;
+  depositAmount?: number;
   status: string;
   paymentMethod: string;
   orderDate: string;
@@ -96,14 +98,15 @@ const sampleOrders: Order[] = [
       phone: '+66123456789'
     },
     items: [
-      { id: 'PROD-001', name: 'Power Drill', brand: 'DeWalt', price: 500, quantity: 1 },
-      { id: 'PROD-002', name: 'Circular Saw', brand: 'Makita', price: 700, quantity: 1 }
+      { id: 'PROD-001', name: 'Power Drill', brand: 'DeWalt', price: 500, quantity: 1, deposit: 1000 },
+      { id: 'PROD-002', name: 'Circular Saw', brand: 'Makita', price: 700, quantity: 1, deposit: 1500 }
     ],
     totalAmount: 1200,
     deliveryAddress: '123 Main St, Bangkok, Thailand',
     gpsCoordinates: { latitude: 13.756331, longitude: 100.501765 },
     distance: 15.3,
     deliveryFee: 150,
+    depositAmount: 2500,
     status: 'pending',
     paymentMethod: 'Credit Card',
     orderDate: '2023-05-15T08:30:00Z'
@@ -116,13 +119,14 @@ const sampleOrders: Order[] = [
       phone: '+66987654321'
     },
     items: [
-      { id: 'PROD-003', name: 'Ladder', brand: 'Werner', price: 1200, quantity: 1 }
+      { id: 'PROD-003', name: 'Ladder', brand: 'Werner', price: 1200, quantity: 1, deposit: 800 }
     ],
     totalAmount: 1200,
     deliveryAddress: '456 Park Ave, Chiang Mai, Thailand',
     gpsCoordinates: { latitude: 18.788220, longitude: 98.985933 },
     distance: 8.7,
     deliveryFee: 100,
+    depositAmount: 800,
     status: 'pending',
     paymentMethod: 'Cash on Delivery',
     orderDate: '2023-05-14T10:15:00Z'
@@ -135,14 +139,15 @@ const sampleOrders: Order[] = [
       phone: '+66234567890'
     },
     items: [
-      { id: 'PROD-004', name: 'Chainsaw', brand: 'Stihl', price: 1500, quantity: 1 },
-      { id: 'PROD-005', name: 'Safety Helmet', brand: 'MSA', price: 300, quantity: 1 }
+      { id: 'PROD-004', name: 'Chainsaw', brand: 'Stihl', price: 1500, quantity: 1, deposit: 2000 },
+      { id: 'PROD-005', name: 'Safety Helmet', brand: 'MSA', price: 300, quantity: 1, deposit: 200 }
     ],
     totalAmount: 1800,
     deliveryAddress: '789 River Rd, Phuket, Thailand',
     gpsCoordinates: { latitude: 7.878978, longitude: 98.398392 },
     distance: 12.4,
     deliveryFee: 120,
+    depositAmount: 2200,
     status: 'pending',
     paymentMethod: 'Bank Transfer',
     orderDate: '2023-05-16T09:45:00Z'
@@ -178,6 +183,7 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       gpsCoordinates: orderData.gpsCoordinates,
       distance: orderData.distance,
       deliveryFee: orderData.deliveryFee || 0,
+      depositAmount: orderData.depositAmount || 0,
       status: 'pending',
       paymentMethod: orderData.paymentMethod || '',
       orderDate: new Date().toISOString(),

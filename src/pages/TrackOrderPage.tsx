@@ -309,6 +309,35 @@ export default function TrackOrderPage() {
             </div>
           </div>
           
+          {/* Order Summary */}
+          <div className="p-6 border-b">
+            <h2 className="font-semibold mb-4">Order Summary</h2>
+            <div className="bg-gray-50 p-4 rounded-lg">
+              <div className="grid grid-cols-2 gap-2 mb-2">
+                <div className="text-gray-600">Subtotal:</div>
+                <div className="text-right font-medium">{order.totalAmount.toFixed(2)} THB</div>
+                
+                <div className="text-gray-600">Delivery Fee:</div>
+                <div className="text-right font-medium">{order.deliveryFee.toFixed(2)} THB</div>
+                
+                {order.depositAmount > 0 && (
+                  <>
+                    <div className="text-amber-700">Deposit (Refundable):</div>
+                    <div className="text-right font-medium text-amber-700">{order.depositAmount.toFixed(2)} THB</div>
+                  </>
+                )}
+                
+                <div className="text-gray-800 font-bold pt-2 border-t">Total:</div>
+                <div className="text-right font-bold pt-2 border-t">
+                  {(order.totalAmount + order.deliveryFee + (order.depositAmount || 0)).toFixed(2)} THB
+                </div>
+              </div>
+              <div className="text-xs text-gray-500 mt-2">
+                {order.depositAmount > 0 && `Includes ${order.depositAmount.toFixed(2)} THB refundable deposit`}
+              </div>
+            </div>
+          </div>
+          
           {/* Live Tracking Map */}
           <div className="p-6">
             <div className="flex items-center justify-between mb-4">

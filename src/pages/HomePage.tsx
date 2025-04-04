@@ -5,7 +5,6 @@ import { Logo } from '../components/Logo';
 import AnimateOnScroll from '../components/AnimateOnScroll';
 import StaggeredList from '../components/StaggeredList';
 import Button from '../components/Button';
-import Breadcrumbs from '../components/Breadcrumbs';
 
 function FAQItem({ question, answer }: { question: string; answer: string }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -74,8 +73,6 @@ function TestimonialCard({ name, role, quote, image }: { name: string; role: str
 import { CSSTransition } from 'react-transition-group';
 
 const HomePage = () => {
-  const [scrollY, setScrollY] = useState(0);
-
   useEffect(() => {
     const handleScroll = () => {
       setScrollY(window.scrollY);
@@ -297,6 +294,20 @@ const HomePage = () => {
           </AnimateOnScroll>
         </div>
       </section>
+
+      {/* Footer - Updated to be smaller with centered, larger logo */}
+      <footer className="bg-gray-900 text-white py-8">
+        <div className="container mx-auto px-6">
+          <div className="text-center">
+            <Logo variant="light" className="mx-auto mb-4" size="large" />
+            <p className="opacity-75 text-sm">© 2024 Tool2U. All rights reserved.</p>
+            <div className="mt-2 text-xs">
+              <a href="tel:+66933880630" className="text-[#FFD700] hover:underline">+66 933 880 630</a> | 
+              <a href="mailto:support@tool2u.com" className="text-[#FFD700] hover:underline ml-2">support@tool2u.com</a>
+            </div>
+          </div>
+        </div>
+      </footer>
     </>
   );
 };

@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { CreditCard, Calendar, Lock, MapPin, Loader2, ArrowLeft, Wallet, Building2, QrCode, AlertCircle, Navigation, Map } from 'lucide-react';
+import { CreditCard, Calendar, Lock, MapPin, Loader2, ArrowLeft, Wallet, Building2, QrCode, AlertCircle, Navigation, Map, Info } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useOrders } from '../context/OrderContext';
 import { calculateDistance, calculateDeliveryFee } from '../utils/distanceCalculator';
 import Button from '../components/Button';
+import { useProducts } from '../utils/productService';
 
 // Google Maps API Key
 const GOOGLE_MAPS_API_KEY = 'AIzaSyDRDTFpVwaAjihQ1SLUuCeZLuIRhBj4seY';
@@ -40,6 +41,8 @@ export default function CheckoutPage() {
   const navigate = useNavigate();
   const { items, clearCart, totalItems } = useCart();
   const { addOrder } = useOrders();
+  const { products } = useProducts();
+  const [showDepositTerms, setShowDepositTerms] = useState(false);
   
   const [isLocating, setIsLocating] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
@@ -322,7 +325,15 @@ export default function CheckoutPage() {
   // Calculate order totals
   const subtotal = items.reduce((total, item) => total + (item.price * item.quantity * item.days), 0);
   const tax = subtotal * 0.07; // 7% tax
-  const total = subtotal + deliveryFee + tax;
+
+  // Calculate deposit total
+  const depositTotal = items.reduce((total, item) => {
+    // Find the product to get its deposit amount
+    const product = products.find(p => p.id === item.id);
+    return total + (product?.deposit || 0) * item.quantity;
+  }, 0);
+
+  const total = subtotal + deliveryFee + tax + depositTotal;
 
   const validateForm = (): boolean => {
     const errors: FormErrors = {};
@@ -389,6 +400,7 @@ export default function CheckoutPage() {
         items: [...items],
         totalAmount: subtotal,
         deliveryFee,
+        depositAmount: depositTotal,
         deliveryAddress: `${formData.address}, ${formData.city}, ${formData.postalCode}`,
         gpsCoordinates: formData.latitude && formData.longitude 
           ? { latitude: formData.latitude, longitude: formData.longitude }
@@ -972,27 +984,36 @@ export default function CheckoutPage() {
               
               {/* Items */}
               <div className="space-y-4 mb-6 max-h-80 overflow-y-auto">
-                {items.map((item) => (
-                  <div key={item.id} className="flex gap-3 pb-3 border-b">
-                    <img 
-                      src={item.image} 
-                      alt={item.name} 
-                      className="w-16 h-16 object-cover rounded-md"
-                    />
-                    <div className="flex-1">
-                      <h3 className="font-medium">{item.name}</h3>
-                      <p className="text-sm text-gray-500">{item.brand}</p>
-                      <div className="flex justify-between mt-1">
-                        <span className="text-sm">
-                          ฿{item.price.toLocaleString()} × {item.quantity} × {item.days} day{item.days > 1 ? 's' : ''}
-                        </span>
-                        <span className="font-medium">
-                          ฿{(item.price * item.quantity * item.days).toLocaleString()}
-                        </span>
+                {items.map((item) => {
+                  const product = products.find(p => p.id === item.id);
+                  return (
+                    <div key={item.id} className="flex gap-3 pb-3 border-b">
+                      <img 
+                        src={item.image} 
+                        alt={item.name} 
+                        className="w-16 h-16 object-cover rounded-md"
+                      />
+                      <div className="flex-1">
+                        <h3 className="font-medium">{item.name}</h3>
+                        <p className="text-sm text-gray-500">{item.brand}</p>
+                        <div className="flex justify-between mt-1">
+                          <span className="text-sm">
+                            ฿{item.price.toLocaleString()} × {item.quantity} × {item.days} day{item.days > 1 ? 's' : ''}
+                          </span>
+                          <span className="font-medium">
+                            ฿{(item.price * item.quantity * item.days).toLocaleString()}
+                          </span>
+                        </div>
+                        {product?.deposit && (
+                          <div className="flex justify-between mt-1 text-sm text-amber-700">
+                            <span>Deposit:</span>
+                            <span>฿{(product.deposit * item.quantity).toLocaleString()}</span>
+                          </div>
+                        )}
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
               
               {/* Totals */}
@@ -1012,11 +1033,27 @@ export default function CheckoutPage() {
                     <span className="text-xs text-gray-500">({distance.toFixed(1)} km)</span>
                   )}
                 </div>
+                <div className="flex justify-between text-sm font-medium text-amber-700">
+                  <span className="flex items-center gap-1">
+                    Deposit
+                    <button 
+                      onClick={() => setShowDepositTerms(true)}
+                      className="text-gray-500 hover:text-gray-700"
+                      aria-label="Deposit information"
+                    >
+                      <Info size={16} />
+                    </button>
+                  </span>
+                  <span>฿{depositTotal.toLocaleString()}</span>
+                </div>
                 <div className="border-t pt-2 mt-2">
                   <div className="flex justify-between font-bold text-lg">
                     <span>Total</span>
                     <span>฿{total.toLocaleString()}</span>
                   </div>
+                  <p className="text-xs text-gray-500 mt-1">
+                    (Includes ฿{depositTotal.toLocaleString()} refundable deposit)
+                  </p>
                 </div>
               </div>
               
@@ -1089,8 +1126,9 @@ export default function CheckoutPage() {
                 <h4 className="font-bold mt-4">4. Payments & Deposits</h4>
                 <ul className="list-disc pl-5">
                   <li>All rentals require full prepayment at checkout.</li>
-                  <li>A refundable security deposit may be required, which will be held on the customer's card or collected in cash.</li>
+                  <li>A refundable security deposit is required for each tool, which will be held on the customer's card or collected in cash.</li>
                   <li>Deposits are refunded upon tool return, subject to damage inspection.</li>
+                  <li>Deposit amounts vary by tool and are clearly indicated in the order summary.</li>
                 </ul>
 
                 <h4 className="font-bold mt-4">5. Delivery & Pickup</h4>
@@ -1156,6 +1194,72 @@ export default function CheckoutPage() {
                   className="px-4 py-2 bg-[#FFD700] text-gray-900 rounded-lg font-bold hover:bg-[#FFE44D]"
                 >
                   I Agree
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Deposit Terms Modal */}
+      {showDepositTerms && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[80vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-bold">Deposit Information</h2>
+                <button 
+                  onClick={() => setShowDepositTerms(false)}
+                  className="text-gray-500 hover:text-gray-700"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+              
+              <div className="prose prose-sm">
+                <h4 className="font-bold">About Tool Deposits</h4>
+                <p>
+                  A security deposit is required for each tool rental. This deposit serves as protection against damage, loss, or theft of our equipment.
+                </p>
+                
+                <h4 className="font-bold mt-4">Deposit Terms:</h4>
+                <ul className="list-disc pl-5">
+                  <li>The deposit amount varies by tool and is based on the tool's value.</li>
+                  <li>Deposits are collected at the time of payment along with the rental fee.</li>
+                  <li>Deposits are fully refundable upon return of the tool in the same condition as when rented.</li>
+                  <li>The deposit will be refunded to the original payment method within 3-5 business days after the tool is returned and inspected.</li>
+                </ul>
+                
+                <h4 className="font-bold mt-4">Deposit Deductions:</h4>
+                <p>Deductions from your deposit may occur in the following situations:</p>
+                <ul className="list-disc pl-5">
+                  <li>Damage to the tool beyond normal wear and tear</li>
+                  <li>Missing parts or accessories</li>
+                  <li>Late return without prior extension approval</li>
+                  <li>Excessive cleaning required</li>
+                </ul>
+                
+                <h4 className="font-bold mt-4">Lost or Stolen Tools:</h4>
+                <p>
+                  If a tool is lost or stolen while in your possession, you will be responsible for the full replacement cost, which may exceed the deposit amount.
+                </p>
+                
+                <div className="bg-amber-50 p-4 rounded-lg mt-4">
+                  <p className="font-bold text-amber-800">Important Note:</p>
+                  <p className="text-amber-700">
+                    By proceeding with your rental, you agree to these deposit terms and authorize Tool2U to deduct appropriate amounts from your deposit for any damages or losses as described above.
+                  </p>
+                </div>
+              </div>
+              
+              <div className="mt-6">
+                <button
+                  onClick={() => setShowDepositTerms(false)}
+                  className="px-4 py-2 bg-[#FFD700] text-gray-900 rounded-lg font-bold hover:bg-[#FFE44D] w-full"
+                >
+                  I Understand
                 </button>
               </div>
             </div>

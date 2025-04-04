@@ -38,16 +38,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
           alt={name}
           className="w-full h-full object-contain transition-transform duration-300 hover:scale-110"
         />
-        {categories.length > 0 && (
-          <div className="absolute top-2 left-2">
-            <span 
-              className="text-gray-800 text-xs font-medium px-2.5 py-1 rounded"
-              style={{ backgroundColor: brandColor }}
-            >
-              {categories[0]}
-            </span>
-          </div>
-        )}
+
       </div>
       
       <div className="p-4">

@@ -21,16 +21,14 @@ const PageTransition: React.FC<PageTransitionProps> = ({ children }) => {
   }
 
   return (
-    <TransitionGroup>
+    <TransitionGroup component={null}>
       <CSSTransition
         key={location.pathname}
         classNames="page"
-        timeout={300}
+        timeout={250}
         unmountOnExit
       >
-        <div className="page-transition-wrapper">
-          {children}
-        </div>
+        {children}
       </CSSTransition>
     </TransitionGroup>
   );

@@ -3,13 +3,29 @@ import { Link } from 'react-router-dom';
 import { useOrders } from '../context/OrderContext';
 import { useAuth } from '../context/AuthContext';
 import NotificationTester from '../components/NotificationTester';
-import { ArrowLeft, Truck, Bell, MapPin, Settings, Users, Package, Clock, CheckCircle, AlertCircle } from 'lucide-react';
+import { 
+  ArrowLeft, 
+  Truck, 
+  Bell, 
+  MapPin, 
+  Settings, 
+  Users, 
+  Package, 
+  Clock, 
+  CheckCircle, 
+  AlertCircle, 
+  CreditCard,
+  CheckSquare,
+  XCircle,
+  Eye
+} from 'lucide-react';
 
 export default function StaffDashboardPage() {
-  const { orders, updateOrderStatus } = useOrders();
+  const { orders, updateOrderStatus, verifyPayment } = useOrders();
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('orders');
   const [activeTabs, setActiveTabs] = useState<string[]>([]);
+  const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
 
   // Determine if user has management privileges
   const isManagement = user?.role === 'owner' || user?.role === 'admin';
@@ -31,8 +47,20 @@ export default function StaffDashboardPage() {
 
   // Filter orders based on status
   const pendingOrders = orders.filter(order => order.status === 'pending');
+  const paymentVerificationOrders = orders.filter(order => order.status === 'payment_verification');
   const activeOrders = orders.filter(order => ['on our way', 'processing'].includes(order.status));
   const completedOrders = orders.filter(order => ['delivered', 'completed'].includes(order.status));
+
+  // Handle payment verification
+  const handleVerifyPayment = (orderId: string) => {
+    verifyPayment(orderId);
+    setSelectedOrderId(null); // Close the order details
+  };
+
+  // Get order details
+  const getOrderDetails = (orderId: string) => {
+    return orders.find(order => order.id === orderId);
+  };
 
   return (
     <div className="pt-20">
@@ -119,6 +147,201 @@ export default function StaffDashboardPage() {
           <div className="lg:col-span-2">
             {activeTab === 'orders' && (
               <div>
+                {/* Payment Verification Orders - Only visible to management */}
+                {isManagement && paymentVerificationOrders.length > 0 && (
+                  <div className="bg-white rounded-lg shadow-md overflow-hidden mb-6">
+                    <div className="p-4 border-b flex justify-between items-center">
+                      <h2 className="text-xl font-bold">Payment Verification Required</h2>
+                      <div className="bg-orange-100 text-orange-800 px-3 py-1 rounded-full text-sm font-medium">
+                        {paymentVerificationOrders.length} Orders
+                      </div>
+                    </div>
+                    
+                    <div className="overflow-x-auto">
+                      <table className="min-w-full divide-y divide-gray-200">
+                        <thead className="bg-gray-50">
+                          <tr>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Order ID</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Payment</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-200">
+                          {paymentVerificationOrders.map(order => (
+                            <tr key={order.id}>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{order.id}</td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                {order.customerInfo.name}<br />
+                                <span className="text-xs">{order.customerInfo.phone}</span>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                {order.paymentMethod}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                {(order.totalAmount + order.deliveryFee).toFixed(2)} THB
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                <div className="flex space-x-2">
+                                  <button
+                                    onClick={() => setSelectedOrderId(order.id)}
+                                    className="text-blue-600 hover:text-blue-900 flex items-center"
+                                  >
+                                    <Eye className="w-4 h-4 mr-1" />
+                                    View
+                                  </button>
+                                  <button
+                                    onClick={() => handleVerifyPayment(order.id)}
+                                    className="text-green-600 hover:text-green-900 flex items-center"
+                                  >
+                                    <CheckSquare className="w-4 h-4 mr-1" />
+                                    Verify
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+                
+                {/* Order Details Modal */}
+                {selectedOrderId && (
+                  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+                      <div className="p-6 border-b flex justify-between items-center">
+                        <h2 className="text-xl font-bold">Order Details: {selectedOrderId}</h2>
+                        <button 
+                          onClick={() => setSelectedOrderId(null)}
+                          className="text-gray-500 hover:text-gray-700"
+                        >
+                          <XCircle className="w-6 h-6" />
+                        </button>
+                      </div>
+                      
+                      {(() => {
+                        const order = getOrderDetails(selectedOrderId);
+                        if (!order) return <div className="p-6">Order not found</div>;
+                        
+                        return (
+                          <div className="p-6">
+                            {/* Customer Information */}
+                            <div className="mb-6">
+                              <h3 className="text-lg font-semibold mb-2">Customer Information</h3>
+                              <div className="bg-gray-50 p-4 rounded-lg">
+                                <p><strong>Name:</strong> {order.customerInfo.name}</p>
+                                <p><strong>Email:</strong> {order.customerInfo.email}</p>
+                                <p><strong>Phone:</strong> {order.customerInfo.phone}</p>
+                                <p><strong>Address:</strong> {order.deliveryAddress}</p>
+                              </div>
+                            </div>
+                            
+                            {/* Order Items */}
+                            <div className="mb-6">
+                              <h3 className="text-lg font-semibold mb-2">Order Items</h3>
+                              <div className="overflow-x-auto">
+                                <table className="min-w-full divide-y divide-gray-200">
+                                  <thead className="bg-gray-50">
+                                    <tr>
+                                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Item</th>
+                                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Quantity</th>
+                                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Price</th>
+                                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Subtotal</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody className="divide-y divide-gray-200">
+                                    {order.items.map((item, index) => (
+                                      <tr key={index}>
+                                        <td className="px-4 py-2 whitespace-nowrap">
+                                          <div className="flex items-center">
+                                            {item.image && (
+                                              <img src={item.image} alt={item.name} className="h-10 w-10 object-cover mr-2" />
+                                            )}
+                                            <div>
+                                              <div className="font-medium">{item.name}</div>
+                                              <div className="text-sm text-gray-500">{item.brand}</div>
+                                            </div>
+                                          </div>
+                                        </td>
+                                        <td className="px-4 py-2 whitespace-nowrap">{item.quantity}</td>
+                                        <td className="px-4 py-2 whitespace-nowrap">{item.price.toFixed(2)} THB</td>
+                                        <td className="px-4 py-2 whitespace-nowrap">
+                                          {(item.price * item.quantity * (item.days || 1)).toFixed(2)} THB
+                                        </td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                  <tfoot>
+                                    <tr>
+                                      <td colSpan={3} className="px-4 py-2 text-right font-medium">Subtotal</td>
+                                      <td className="px-4 py-2 whitespace-nowrap">{order.totalAmount.toFixed(2)} THB</td>
+                                    </tr>
+                                    <tr>
+                                      <td colSpan={3} className="px-4 py-2 text-right font-medium">Delivery Fee</td>
+                                      <td className="px-4 py-2 whitespace-nowrap">{order.deliveryFee.toFixed(2)} THB</td>
+                                    </tr>
+                                    <tr className="bg-gray-50">
+                                      <td colSpan={3} className="px-4 py-2 text-right font-bold">Total</td>
+                                      <td className="px-4 py-2 whitespace-nowrap font-bold">
+                                        {(order.totalAmount + order.deliveryFee).toFixed(2)} THB
+                                      </td>
+                                    </tr>
+                                  </tfoot>
+                                </table>
+                              </div>
+                            </div>
+                            
+                            {/* Payment Information */}
+                            <div className="mb-6">
+                              <h3 className="text-lg font-semibold mb-2">Payment Information</h3>
+                              <div className="bg-gray-50 p-4 rounded-lg">
+                                <p><strong>Payment Method:</strong> {order.paymentMethod}</p>
+                                <p><strong>Status:</strong> {order.status}</p>
+                                <p><strong>Order Date:</strong> {new Date(order.orderDate).toLocaleString()}</p>
+                              </div>
+                            </div>
+                            
+                            {/* Payment Verification Actions */}
+                            {order.status === 'payment_verification' && (
+                              <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200 mb-6">
+                                <div className="flex items-center mb-2">
+                                  <CreditCard className="w-5 h-5 text-yellow-600 mr-2" />
+                                  <h3 className="text-lg font-semibold text-yellow-800">Payment Verification Required</h3>
+                                </div>
+                                <p className="text-yellow-700 mb-4">
+                                  This order requires payment verification before it can be processed. Please verify that the payment has been received.
+                                </p>
+                                <div className="flex space-x-4">
+                                  <button
+                                    onClick={() => handleVerifyPayment(order.id)}
+                                    className="bg-green-500 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-green-600 transition-colors flex items-center"
+                                  >
+                                    <CheckSquare className="w-4 h-4 mr-2" />
+                                    Verify Payment
+                                  </button>
+                                </div>
+                              </div>
+                            )}
+                            
+                            {/* Action Buttons */}
+                            <div className="flex justify-end space-x-3">
+                              <button
+                                onClick={() => setSelectedOrderId(null)}
+                                className="bg-gray-200 text-gray-800 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-300 transition-colors"
+                              >
+                                Close
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  </div>
+                )}
+                
                 {/* Pending Orders */}
                 <div className="bg-white rounded-lg shadow-md overflow-hidden mb-6">
                   <div className="p-4 border-b flex justify-between items-center">
@@ -154,7 +377,7 @@ export default function StaffDashboardPage() {
                               </td>
                               <td className="px-6 py-4 text-sm text-gray-500 max-w-xs truncate">{order.deliveryAddress}</td>
                               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                {order.totalAmount + order.deliveryFee} THB
+                                {(order.totalAmount + order.deliveryFee).toFixed(2)} THB
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                 <div className="flex space-x-2">
@@ -474,6 +697,16 @@ export default function StaffDashboardPage() {
                     <div className="text-sm text-purple-600">Total</div>
                   </div>
                 </div>
+                
+                {/* Payment verification counter for management */}
+                {isManagement && paymentVerificationOrders.length > 0 && (
+                  <div className="mt-4">
+                    <div className="bg-orange-50 p-4 rounded-lg text-center">
+                      <div className="text-2xl font-bold text-orange-700">{paymentVerificationOrders.length}</div>
+                      <div className="text-sm text-orange-600">Awaiting Verification</div>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
             
@@ -575,6 +808,17 @@ export default function StaffDashboardPage() {
                         {pendingOrders.length} Require Attention
                       </span>
                     </div>
+                    
+                    {/* Payment verification status */}
+                    {paymentVerificationOrders.length > 0 && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-gray-600">Payment Verification</span>
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
+                          <CreditCard className="w-3 h-3 mr-1" />
+                          {paymentVerificationOrders.length} Pending
+                        </span>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
